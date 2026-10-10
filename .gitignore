@@ -21,3 +21,10 @@ coverage/
 .DS_Store
 
 .env*
+
+# Outillage d'agents installe par les integrations (Neon marketplace). Sans
+# rapport avec l'application, et `.claude/skills` contient des liens
+# symboliques vers des chemins Windows absolus qui cassent un build Linux.
+.claude/
+.agents/
+skills-lock.json

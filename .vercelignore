@@ -1,0 +1,9 @@
+# Rien de ce qui suit n'est utile a l'execution de l'application.
+.claude
+.agents
+skills-lock.json
+tests
+docs
+scripts
+prisma/dev.db
+storage
