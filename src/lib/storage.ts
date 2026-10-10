@@ -1,21 +1,27 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { ValidationError } from "@/lib/errors";
 import { ALLOWED_UPLOAD_MIME } from "@/lib/constants";
+import {
+  readStoredFileBytes,
+  removeStoredFile,
+  writeStoredFile,
+} from "@/lib/storage-backend";
 
 /**
  * Stockage PRIVE des fichiers.
  *
- * Les fichiers ne sont jamais ecrits dans /public : ils vivent hors de la
- * racine web et ne sont servis que par /api/files/[id], apres verification du
- * tenant et des permissions. Une URL devinee ne donne donc aucun acces.
+ * Les fichiers ne sont jamais ecrits dans /public : ils ne sont servis que par
+ * /api/files/[id], apres verification du tenant et des permissions.
+ *
+ * L'ecriture et la lecture effectives sont deleguees a src/lib/storage-backend.ts,
+ * qui choisit entre disque local et Vercel Blob. Ce module-ci garde ce qui ne
+ * depend pas du support : controle de taille, detection du type REEL d'apres la
+ * signature binaire, et tracabilite en base.
  */
-
-const ROOT = path.resolve(process.cwd(), env.storage.localPath);
 
 /** Signatures binaires : le type MIME declare par le client n'est pas digne de confiance. */
 const MAGIC_NUMBERS: { mime: string; bytes: number[]; offset: number }[] = [
@@ -92,14 +98,12 @@ export async function storeUploadedFile(input: StoreFileInput): Promise<{ docume
     `${randomUUID()}${extension}`,
   );
 
-  const absolutePath = path.join(ROOT, storageKey);
-  await mkdir(path.dirname(absolutePath), { recursive: true });
-  await writeFile(absolutePath, buffer);
+  const storedKey = await writeStoredFile(storageKey, buffer, detected);
 
   const document = await prisma.document.create({
     data: {
       schoolId: input.schoolId,
-      storageKey,
+      storageKey: storedKey,
       fileName: safeName,
       mimeType: detected,
       sizeBytes: buffer.byteLength,
@@ -136,14 +140,12 @@ export async function storeGeneratedFile(input: {
     `${randomUUID()}${path.extname(input.fileName) || ".pdf"}`,
   );
 
-  const absolutePath = path.join(ROOT, storageKey);
-  await mkdir(path.dirname(absolutePath), { recursive: true });
-  await writeFile(absolutePath, input.buffer);
+  const storedKey = await writeStoredFile(storageKey, input.buffer, input.mimeType);
 
   const document = await prisma.document.create({
     data: {
       schoolId: input.schoolId,
-      storageKey,
+      storageKey: storedKey,
       fileName: sanitizeFileName(input.fileName),
       mimeType: input.mimeType,
       sizeBytes: input.buffer.byteLength,
@@ -160,15 +162,11 @@ export async function storeGeneratedFile(input: {
 }
 
 /**
- * Lit un fichier. La cle est re-resolue et verifiee : meme si un storageKey
- * corrompu contenait "../", la lecture hors du dossier de stockage est refusee.
+ * Lit un fichier. Le controle de traversee de chemin est applique par le
+ * backend : un `storageKey` corrompu contenant « ../ » est refuse.
  */
 export async function readStoredFile(storageKey: string): Promise<Buffer> {
-  const absolutePath = path.resolve(ROOT, storageKey);
-  if (!absolutePath.startsWith(path.resolve(ROOT) + path.sep)) {
-    throw new ValidationError("Chemin de fichier invalide.");
-  }
-  return readFile(absolutePath);
+  return readStoredFileBytes(storageKey);
 }
 
 export async function deleteStoredFile(documentId: string): Promise<void> {
@@ -178,12 +176,8 @@ export async function deleteStoredFile(documentId: string): Promise<void> {
   });
   if (!document) return;
 
-  try {
-    const absolutePath = path.resolve(ROOT, document.storageKey);
-    if (absolutePath.startsWith(path.resolve(ROOT) + path.sep)) await unlink(absolutePath);
-  } catch {
-    // Fichier deja absent du disque : on poursuit la suppression logique.
-  }
+  // Fichier deja absent du support : on poursuit la suppression logique.
+  await removeStoredFile(document.storageKey);
 
   await prisma.document.update({
     where: { id: documentId },

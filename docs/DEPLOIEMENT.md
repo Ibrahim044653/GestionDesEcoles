@@ -100,6 +100,87 @@ sudo systemctl status gestion-ecole
 
 ---
 
+## 3 bis. Deploiement sur Vercel
+
+Vercel convient a cette application, a deux conditions qui ne sont pas
+optionnelles.
+
+**1. Pas de SQLite.** Le systeme de fichiers y est en lecture seule hors
+`/tmp`, et `/tmp` ne survit pas d'une invocation a l'autre. Une base SQLite y
+serait perdue en permanence. Il faut un PostgreSQL manage (Neon, Supabase,
+Railway, RDS…).
+
+**2. Pas de stockage disque.** Pour la meme raison, les fichiers televerses
+doivent aller dans un magasin objet. L'application fournit un pilote Vercel
+Blob : `STORAGE_DRIVER="blob"`.
+
+### Mise en place
+
+```bash
+vercel link --project gestion-des-ecoles
+
+# Base PostgreSQL. L'acceptation des conditions du marketplace se fait dans
+# le navigateur, une seule fois, par le proprietaire du compte.
+vercel integration add neon --plan free_v3 -m region=fra1 -m auth=false
+
+# Magasin de fichiers. PRIVE : voir la note de securite ci-dessous.
+vercel blob create-store gestion-ecoles-fichiers --access private --yes
+
+# Secrets applicatifs
+openssl rand -base64 48 | vercel env add SESSION_SECRET production
+printf 'blob' | vercel env add STORAGE_DRIVER production
+
+vercel deploy --prod
+```
+
+`DATABASE_URL` et `BLOB_READ_WRITE_TOKEN` sont injectes automatiquement par
+les deux commandes de provisionnement.
+
+### Le provider Prisma se bascule tout seul
+
+Prisma interdit `env()` sur `provider` : la valeur doit etre litterale. Le
+schema reste donc **un seul fichier** (source de verite unique, pas de copie a
+maintenir en parallele) et c'est le build qui choisit :
+
+```json
+"vercel-build": "node scripts/use-datasource.mjs postgresql && prisma generate && prisma db push --accept-data-loss && next build"
+```
+
+En local, le schema reste en `sqlite` : la suite de tests cree une base
+jetable et n'a besoin d'aucun serveur.
+
+### Amorcer la base de demonstration
+
+```bash
+vercel env pull .env.production.local --environment production
+DATABASE_URL="<url_neon>" npm run db:seed:prod
+```
+
+> Le seed refuse de s'executer si `NODE_ENV=production` sans
+> `ALLOW_SEED_IN_PRODUCTION="true"`. C'est deliberé : on ne remplit pas une
+> base reelle de donnees fictives par accident.
+
+### Securite du magasin de fichiers
+
+Le magasin est cree en `--access private`. C'est important : en magasin
+public, chaque justificatif de paiement et chaque photo d'eleve serait lisible
+par quiconque obtiendrait l'URL, ce qui contredirait la regle centrale de
+l'application — un fichier n'est servi que par `/api/files/[id]`, apres
+verification du tenant et des permissions. En prive, l'URL ne suffit pas : il
+faut le jeton du magasin, qui ne quitte jamais le serveur.
+
+### Ce que Vercel ne resout pas
+
+- **Recherche sensible a la casse.** Sous SQLite, `contains` ignore la casse
+  pour l'ASCII ; sous PostgreSQL, non. Les champs de recherche (eleves,
+  bibliotheque) deviennent sensibles a la casse apres migration.
+- **Taches planifiees.** Purge des sessions et sauvegardes restent a mettre en
+  place (voir sections 6 et 7) ; `vercel crons` peut servir de declencheur.
+- **Demarrage a froid.** Premiere requete apres inactivite plus lente, le
+  temps que la connexion a la base s'etablisse.
+
+---
+
 ## 4. Proxy inverse et HTTPS
 
 L'application **ne gere pas TLS**. Placez-la derriere un proxy.

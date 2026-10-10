@@ -4,9 +4,15 @@ out/
 build/
 *.tsbuildinfo
 next-env.d.ts
-.env
-.env.local
-.env*.local
+
+# Secrets et configuration locale. Le modele .env.example, lui, doit rester
+# au depot : il ne contient aucune valeur reelle.
+.env*
+!.env.example
+
+# Liaison et jetons du projet Vercel.
+.vercel
+
 prisma/*.db
 prisma/*.db-journal
 prisma/test-*.db
