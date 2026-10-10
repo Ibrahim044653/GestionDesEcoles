@@ -1,9 +1,11 @@
-# Rien de ce qui suit n'est utile a l'execution de l'application.
+# Rien de ce qui suit n'est utile a la construction ni a l'execution.
+#
+# ATTENTION : ne pas exclure scripts/, la commande de build y appelle
+# use-datasource.mjs pour basculer le provider Prisma en postgresql.
 .claude
 .agents
 skills-lock.json
 tests
 docs
-scripts
 prisma/dev.db
 storage
