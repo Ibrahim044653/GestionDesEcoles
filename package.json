@@ -18,7 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
-    "vercel-build": "node scripts/use-datasource.mjs postgresql && prisma generate && prisma db push --accept-data-loss && next build",
+    "vercel-build": "node scripts/use-datasource.mjs postgresql && prisma generate && next build",
     "db:seed:prod": "node scripts/use-datasource.mjs postgresql && prisma generate && tsx prisma/seed.ts"
   },
   "prisma": {

@@ -22,7 +22,7 @@ generator client {
 //   3. `npx prisma migrate dev --name init`.
 // Aucun autre fichier n'est a modifier : le schema n'utilise ni enum ni Decimal.
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

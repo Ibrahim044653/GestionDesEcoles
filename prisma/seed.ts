@@ -20,7 +20,11 @@ import { recordPayment, submitPaymentProof } from "../src/lib/domain/payments";
 import { renderMatricule } from "../src/lib/domain/sequences";
 import { generateReportCards } from "../src/lib/domain/report-cards";
 
-const prisma = new PrismaClient();
+// Memes delais que le client applicatif (src/lib/prisma.ts) : le seed ecrit
+// des milliers de lignes et doit supporter la latence d'une base distante.
+const prisma = new PrismaClient({
+  transactionOptions: { maxWait: 10_000, timeout: 30_000 },
+});
 
 const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD || "Demo@2026";
 const YEAR_NAME = "2025-2026";

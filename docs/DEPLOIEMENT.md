@@ -143,7 +143,20 @@ schema reste donc **un seul fichier** (source de verite unique, pas de copie a
 maintenir en parallele) et c'est le build qui choisit :
 
 ```json
-"vercel-build": "node scripts/use-datasource.mjs postgresql && prisma generate && prisma db push --accept-data-loss && next build"
+"vercel-build": "node scripts/use-datasource.mjs postgresql && prisma generate && next build"
+```
+
+**Le build ne touche PAS au schema**, et c'est deliberé. Enchainer un
+`prisma db push --accept-data-loss` a chaque mise en production reviendrait a
+autoriser toute evolution de schema a supprimer une colonne de donnees reelles
+pendant un deploiement de routine, sans que personne ne l'ait decide. La
+creation et l'evolution du schema sont des gestes separes et volontaires :
+
+```bash
+# Premiere mise en place, ou apres une evolution du modele
+node scripts/use-datasource.mjs postgresql
+npx prisma db push          # ou `prisma migrate deploy` avec des migrations
+node scripts/use-datasource.mjs sqlite
 ```
 
 En local, le schema reste en `sqlite` : la suite de tests cree une base
