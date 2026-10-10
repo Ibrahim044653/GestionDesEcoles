@@ -1075,8 +1075,82 @@ async function seedSchool(input: SeedSchoolInput) {
   }
 
   await seedAnnouncements(school.id, director.userId!, classRooms[0]?.id);
+  await seedLibrary(school.id, students);
 
   return { schoolId: school.id, ownerId: owner.userId! };
+}
+
+/**
+ * Fonds documentaire de demonstration et quelques prets, dont un en retard :
+ * l'ecran de bibliotheque doit montrer un cas reel, pas une page vide.
+ */
+async function seedLibrary(schoolId: string, students: { id: string }[]) {
+  const catalogue = [
+    { reference: "LIT-0001", title: "Une si longue lettre", author: "Mariama BA", kind: "LIVRE", category: "Litterature", copies: 4, shelf: "Rayon A1" },
+    { reference: "LIT-0002", title: "Les soleils des independances", author: "Ahmadou KOUROUMA", kind: "LIVRE", category: "Litterature", copies: 3, shelf: "Rayon A1" },
+    { reference: "LIT-0003", title: "L'enfant noir", author: "Camara LAYE", kind: "LIVRE", category: "Litterature", copies: 5, shelf: "Rayon A2" },
+    { reference: "SCI-0001", title: "Mathematiques 6e", author: "Collectif", kind: "MANUEL", category: "Sciences", copies: 20, shelf: "Rayon C1" },
+    { reference: "SCI-0002", title: "Sciences de la vie et de la Terre 5e", author: "Collectif", kind: "MANUEL", category: "Sciences", copies: 18, shelf: "Rayon C1" },
+    { reference: "HIS-0001", title: "Histoire-Geographie 4e", author: "Collectif", kind: "MANUEL", category: "Histoire", copies: 15, shelf: "Rayon C2" },
+    { reference: "REV-0001", title: "Jeune Afrique - annee en cours", author: "", kind: "REVUE", category: "Actualite", copies: 2, shelf: "Presentoir" },
+  ];
+
+  const items = [];
+  for (const entry of catalogue) {
+    const item = await prisma.libraryItem.create({
+      data: {
+        schoolId,
+        reference: entry.reference,
+        title: entry.title,
+        author: entry.author,
+        kind: entry.kind,
+        category: entry.category,
+        totalCopies: entry.copies,
+        shelf: entry.shelf,
+      },
+      select: { id: true },
+    });
+    items.push(item);
+  }
+
+  const day = 86_400_000;
+  const loans = [
+    { item: 0, student: 0, loanedDaysAgo: 5, dueInDays: 9 },
+    { item: 1, student: 1, loanedDaysAgo: 20, dueInDays: -6 }, // en retard
+    { item: 3, student: 2, loanedDaysAgo: 2, dueInDays: 12 },
+    { item: 4, student: 3, loanedDaysAgo: 30, dueInDays: -16 }, // en retard
+  ];
+
+  for (const loan of loans) {
+    const student = students[loan.student];
+    if (!student || !items[loan.item]) continue;
+    await prisma.libraryLoan.create({
+      data: {
+        schoolId,
+        itemId: items[loan.item].id,
+        studentId: student.id,
+        loanedAt: new Date(Date.now() - loan.loanedDaysAgo * day),
+        dueDate: new Date(Date.now() + loan.dueInDays * day),
+        status: "EN_COURS",
+      },
+    });
+  }
+
+  // Un pret deja rendu, pour que l'historique ne soit pas vide.
+  if (students[4] && items[2]) {
+    await prisma.libraryLoan.create({
+      data: {
+        schoolId,
+        itemId: items[2].id,
+        studentId: students[4].id,
+        loanedAt: new Date(Date.now() - 40 * day),
+        dueDate: new Date(Date.now() - 26 * day),
+        returnedAt: new Date(Date.now() - 28 * day),
+        status: "RENDU",
+        condition: "Bon etat",
+      },
+    });
+  }
 }
 
 async function seedAnnouncements(schoolId: string, authorId: string, classRoomId?: string) {

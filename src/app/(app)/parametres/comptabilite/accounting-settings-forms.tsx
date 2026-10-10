@@ -12,6 +12,7 @@ import {
   createExpenseCategoryAction,
   createFinancialAccountAction,
   createSupplierAction,
+  setBudgetAction,
 } from "../actions";
 
 /** Creation d'une caisse, d'un compte bancaire ou Mobile Money. */
@@ -101,6 +102,64 @@ export function SupplierForm() {
       <TextField name="taxId" label="Numero fiscal" />
       <TextField name="address" label="Adresse" />
       <SubmitButton className="btn-primary btn-sm w-full">Enregistrer le fournisseur</SubmitButton>
+    </ActionForm>
+  );
+}
+
+/**
+ * Budget previsionnel par categorie de depense.
+ *
+ * Le rapprochement budget / realise (ecran Rapports) compare ce montant aux
+ * depenses REELLEMENT reglees de la categorie choisie.
+ */
+export function BudgetForm({
+  academicYears,
+  categories,
+  currencyLabel,
+}: {
+  academicYears: { id: string; name: string; isCurrent: boolean }[];
+  categories: { code: string; name: string }[];
+  currencyLabel: string;
+}) {
+  return (
+    <ActionForm action={setBudgetAction} className="space-y-3" resetOnSuccess>
+      <SelectField
+        name="academicYearId"
+        label="Annee scolaire"
+        required
+        defaultValue={academicYears.find((year) => year.isCurrent)?.id}
+        options={academicYears.map((year) => ({
+          value: year.id,
+          label: `${year.name}${year.isCurrent ? " (en cours)" : ""}`,
+        }))}
+      />
+
+      <SelectField
+        name="category"
+        label="Categorie de depense"
+        required
+        placeholder="Choisir"
+        options={categories.map((category) => ({
+          value: category.code,
+          label: `${category.code} — ${category.name}`,
+        }))}
+      />
+
+      <FormGrid cols={2}>
+        <TextField name="label" label="Libelle du poste" required placeholder="Budget salaires" />
+        <TextField
+          name="planned"
+          label={`Montant prevu (${currencyLabel})`}
+          required
+          inputMode="decimal"
+        />
+      </FormGrid>
+
+      <p className="field-hint">
+        Enregistrer un poste portant le meme libelle met a jour le montant existant.
+      </p>
+
+      <SubmitButton className="btn-primary btn-sm w-full">Enregistrer le budget</SubmitButton>
     </ActionForm>
   );
 }

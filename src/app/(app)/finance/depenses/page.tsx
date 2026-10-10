@@ -21,6 +21,8 @@ import {
   AlertIcon,
 } from "@/components/ui";
 import { ExpenseForm, ExpenseDecisionButtons } from "./expense-forms";
+import { UploadButton } from "@/components/client/upload";
+import { uploadExpenseAttachmentAction } from "../../fichiers/actions";
 
 export const metadata: Metadata = { title: "Depenses" };
 
@@ -232,6 +234,16 @@ export default async function ExpensesPage({
                         canApprove={canApprove}
                         canPay={canPay}
                       />
+                      {canCreate && (
+                        <UploadButton
+                          action={uploadExpenseAttachmentAction}
+                          hiddenFields={{ expenseId: expense.id }}
+                          label="Piece jointe"
+                          fieldLabel="Facture ou justificatif"
+                          hint="Photo ou PDF de la facture du fournisseur."
+                          className="btn-ghost btn-sm"
+                        />
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, assertSameSchool } from "@/lib/auth/guard";
-import { PERMISSIONS } from "@/lib/permissions";
+import {
+  PERMISSIONS,
+  NON_GRANTABLE_PERMISSIONS,
+  effectivePermissions,
+} from "@/lib/permissions";
 import { fail, ok, ConflictError, NotFoundError, ValidationError, type ActionResult } from "@/lib/errors";
 import { hashPassword, generateToken } from "@/lib/auth/password";
 import { revokeAllSessions } from "@/lib/auth/session";
@@ -210,6 +214,99 @@ export async function resetUserPasswordAction(
       { temporaryPassword },
       `Mot de passe reinitialise. A transmettre a l'interesse : ${temporaryPassword} ` +
         "(il devra le changer a la premiere connexion). Ce code ne sera plus affiche.",
+    );
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Surcharges de permissions d'un rattachement.
+ *
+ * Le formulaire envoie l'etat SOUHAITE de chaque permission ; l'action en
+ * deduit les ecarts par rapport a la matrice du role. Une permission conforme
+ * au role n'est jamais stockee : les surcharges restent courtes et lisibles,
+ * et un changement futur de la matrice du role continue de s'appliquer.
+ *
+ * Deux garde-fous :
+ *  - `saas.admin` n'est jamais accordable depuis l'ecran d'un etablissement ;
+ *  - un administrateur ne peut pas modifier ses propres permissions, sinon il
+ *    pourrait se les etendre sans controle.
+ */
+export async function updateMembershipPermissionsAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<{ grant: number; revoke: number }>> {
+  try {
+    const context = await requirePermission(PERMISSIONS.MEMBERSHIP_MANAGE);
+
+    const membershipId = String(formData.get("membershipId") ?? "");
+    const membership = await prisma.membership.findUnique({
+      where: { id: membershipId },
+      select: {
+        id: true,
+        schoolId: true,
+        userId: true,
+        role: { select: { code: true } },
+        user: { select: { firstName: true, lastName: true } },
+      },
+    });
+    await assertSameSchool(context, membership, "membership");
+
+    if (membership!.userId === context.user.id) {
+      throw new ConflictError(
+        "Vous ne pouvez pas modifier vos propres permissions. Demandez a un autre administrateur.",
+      );
+    }
+
+    const wanted = new Set(
+      formData
+        .getAll("permissions")
+        .map((value) => String(value))
+        .filter((code) => !NON_GRANTABLE_PERMISSIONS.includes(code)),
+    );
+
+    const known = new Set<string>(Object.values(PERMISSIONS));
+    for (const code of wanted) {
+      if (!known.has(code)) throw new ValidationError(`Permission inconnue : ${code}.`);
+    }
+
+    // Base du role, sans aucune surcharge : c'est la reference des ecarts.
+    const base = effectivePermissions(membership!.role.code, null);
+
+    const grant = [...wanted].filter((code) => !base.has(code)).sort();
+    const revoke = [...base]
+      .filter((code) => !wanted.has(code) && !NON_GRANTABLE_PERMISSIONS.includes(code))
+      .sort();
+
+    await prisma.membership.update({
+      where: { id: membershipId },
+      data: {
+        overrides:
+          grant.length === 0 && revoke.length === 0 ? "{}" : JSON.stringify({ grant, revoke }),
+      },
+    });
+
+    await recordAudit({
+      action: "membership.permissions_updated",
+      schoolId: context.school.id,
+      userId: context.user.id,
+      entityType: "membership",
+      entityId: membershipId,
+      metadata: {
+        agent: `${membership!.user.lastName} ${membership!.user.firstName}`,
+        role: membership!.role.code,
+        accordees: grant,
+        retirees: revoke,
+      },
+    });
+
+    revalidatePath("/parametres/utilisateurs");
+    return ok(
+      { grant: grant.length, revoke: revoke.length },
+      grant.length === 0 && revoke.length === 0
+        ? "Permissions alignees sur le role : aucune surcharge conservee."
+        : `${grant.length} permission(s) ajoutee(s) et ${revoke.length} retiree(s) par rapport au role.`,
     );
   } catch (error) {
     return fail(error);

@@ -19,7 +19,7 @@ charges.
 | Proprietaire gerant plusieurs ecoles | TERMINE | Selecteur d'etablissement dans la barre superieure |
 | 9 roles avec permissions strictes | TERMINE | Matrice dans `src/lib/permissions.ts`, 33 tests |
 | Affectation multi-etablissements | TERMINE | Un role par ecole et par utilisateur |
-| Permissions fines par membership | PARTIEL | Le moteur de surcharges (`grant`/`revoke`) existe et est teste ; **aucun ecran** ne permet encore de les editer |
+| Permissions fines par membership | TERMINE | Editeur par rattachement (`/parametres/utilisateurs/[membershipId]`), ecarts au role signales, `saas.admin` non accordable, auto-modification refusee |
 | Types d'etablissement (prescolaire → universite) | TERMINE | Influence la terminologie (trimestre/semestre, credits) |
 
 ## 3. Creation et configuration d'une ecole
@@ -28,13 +28,13 @@ charges.
 |---|---|---|
 | Identite, contacts, devise, locale | TERMINE | |
 | Cycles, niveaux, classes, matieres, coefficients | TERMINE | |
-| Filieres | PARTIEL | Modele complet et utilisable ; **pas d'ecran de creation** (a creer en base ou via le seed) |
+| Filieres | TERMINE | Creation depuis `/parametres/classes` |
 | Periodes d'evaluation | TERMINE | Trimestres, semestres, modules |
 | Regle de matricule parametrable | TERMINE | Jetons `{SCHOOL}`, `{YEAR}`, `{YY}`, `{SEQ:n}` |
 | Frais et moyens de paiement | TERMINE | |
 | Import CSV avec apercu, erreurs, doublons | TERMINE | 13 tests d'integration |
 | Import Excel (.xlsx) natif | NON IMPLEMENTE | Exporter en CSV depuis Excel ; le format CSV est pleinement gere (separateurs, accents, Windows-1252) |
-| Logo de l'etablissement | PARTIEL | Champ present en base ; **pas d'ecran de televersement** |
+| Logo de l'etablissement | TERMINE | Televersement depuis `/parametres`, repris sur les documents PDF |
 
 ## 4. Eleves et etudiants
 
@@ -46,7 +46,7 @@ charges.
 | Statuts (transfere, abandon, diplome, archive) | TERMINE | Aucune suppression, historique conserve |
 | Places disponibles | TERMINE | Affichage et blocage a la capacite |
 | Certificats, cartes, listes de classe, releves (PDF) | TERMINE | |
-| Photo de l'eleve | PARTIEL | Champ et emplacement reserve sur la carte ; **pas d'ecran de televersement** |
+| Photo de l'eleve | TERMINE | Televersement depuis la fiche eleve, incrustee sur la carte scolaire |
 | Historique scolaire inter-etablissements | NON IMPLEMENTE | L'historique est propre a chaque ecole |
 
 ## 5. Enseignants et personnel
@@ -57,7 +57,7 @@ charges.
 | Affectation classes/matieres | TERMINE | Borne les droits de l'enseignant |
 | Creation et suspension des acces | TERMINE | Suspendre ferme les sessions en cours |
 | Export vers logiciel de paie | TERMINE | CSV ; **aucun calcul de paie legale** (choix assume) |
-| Presences, retards, conges du personnel | PARTIEL | Modeles `StaffAttendance` / `StaffLeave` presents et exportes ; **pas d'ecran de saisie** |
+| Presences, retards, conges du personnel | TERMINE | `/personnel/presences` : feuille quotidienne, retards en minutes, demandes de conge et approbation (l'approbation marque les journees, sans ecraser un fait deja constate). **Aucune retenue sur salaire n'est calculee** |
 | Emploi du temps enseignant | TERMINE | Vue « mes cours » |
 
 ## 6. Gestion pedagogique
@@ -72,12 +72,12 @@ charges.
 | Bulletins PDF figes | TERMINE | |
 | Verrouillage a la publication | TERMINE | |
 | Journal des corrections | TERMINE | Motif obligatoire, tracabilite complete |
-| Appreciations | PARTIEL | Suggestion automatique et champ en base ; **pas d'ecran de saisie par matiere** |
-| Decisions de passage / redoublement | PARTIEL | Champ `decision` sur l'inscription ; **pas d'ecran de conseil de classe** |
-| Universite : UE, EC, credits, semestres | PARTIEL | Modele complet, credits calcules (`computeEarnedCredits`), affichage adapte ; **pas d'ecran de gestion des UE** |
-| Rattrapages | PARTIEL | Champ `examSession` sur l'evaluation ; **pas de logique de substitution de note** |
+| Appreciations | TERMINE | Appreciation generale (conseil de classe) et **par matiere** (`/pedagogie/appreciations`, saisie par l'enseignant de la matiere, figee dans le bulletin a la generation) |
+| Decisions de passage / redoublement | TERMINE | `/pedagogie/conseil` : deliberation par classe, proposition selon la moyenne de passage (modifiable), enregistrement en une seule transaction, annee cloturee refusee |
+| Universite : UE, EC, credits, semestres | TERMINE | Gestion des UE depuis `/parametres/matieres`, credits calcules (`computeEarnedCredits`) |
+| Rattrapages | TERMINE | Substitution parametrable (meilleure session / remplacement / ignore), plafond facultatif qui ne degrade jamais la session normale, les deux sessions restent lisibles sur le bulletin. 9 tests |
 | Stages, memoires, soutenances, jurys, diplomation | NON IMPLEMENTE | |
-| Proces-verbaux PDF | NON IMPLEMENTE | Les bulletins et listes de classe existent |
+| Proces-verbaux PDF | TERMINE | PV de deliberation (`/api/documents/proces-verbal/...`), synthese par decision, reserve explicite si des bulletins ou des decisions manquent |
 
 ## 7. Devoirs et ressources
 
@@ -87,8 +87,8 @@ charges.
 | Statuts a faire / remis / en retard / corrige | TERMINE | Retard determine par l'horloge **serveur** |
 | Depot des travaux par l'eleve | TERMINE | Saisie texte |
 | Notation et commentaires | TERMINE | |
-| Pieces jointes aux devoirs et aux remises | PARTIEL | Modele `Document` relie ; **pas d'ecran de televersement** |
-| Corrige publie ulterieurement | PARTIEL | Champs en base ; **pas d'ecran** |
+| Pieces jointes aux devoirs et aux remises | TERMINE | Televersement cote enseignant et cote eleve |
+| Corrige publie ulterieurement | TERMINE | Publication refusee avant la date limite |
 | Supports pedagogiques, bibliotheque de ressources | NON IMPLEMENTE | |
 
 ## 8-9. Frais, comptes eleves, paiements
@@ -107,9 +107,9 @@ charges.
 | Televersement du justificatif par le parent | TERMINE | Type reel verifie par signature binaire |
 | Paiements partiels, trop-percus, remboursements | TERMINE | |
 | Annulation avec contrepassation | TERMINE | Aucune suppression |
-| Rapprochement bancaire | PARTIEL | Modele `BankReconciliation` present ; **pas d'ecran** |
-| Remise fratrie automatique | PARTIEL | `countSiblings()` disponible ; application **manuelle** |
-| Penalites de retard | PARTIEL | Champ `penaltyMinor` pris en compte dans les soldes ; **pas de calcul automatique** |
+| Rapprochement bancaire | TERMINE | `/finance/rapprochement` : solde comptable reconstitue (ouverture + encaissements valides − depenses payees), ecart fige, **cloture impossible sans explication quand l'ecart n'est pas nul**. Aucune ecriture correctrice automatique |
+| Remise fratrie automatique | TERMINE | Paliers parametrables, apercu avant application, declenchement explicite et trace ; une remise fratrie deja accordee n'est jamais ecrasee |
+| Penalites de retard | TERMINE | Modes fixe / pourcentage / pourcentage par jour, jours de tolerance, plafond ; calcul sur le **reste du**, penalite **recalculee et non cumulee**, declenchement explicite. 11 tests |
 | Paiement en ligne | NON IMPLEMENTE | Interface definie, **aucun prestataire branche** |
 
 ## 10. Depenses et comptabilite
@@ -125,7 +125,7 @@ charges.
 | Balance, grand livre, compte de resultat, bilan | TERMINE | Desequilibre **signale**, jamais masque |
 | Cloture de periode | TERMINE | Brouillons bloquants |
 | Distinction CA / encaissements / creances / resultat / tresorerie | TERMINE | Definitions rappelees dans l'interface |
-| Budget vs realise | PARTIEL | Modele et calcul presents, affiches dans les rapports ; **pas d'ecran de saisie du budget** |
+| Budget vs realise | TERMINE | Saisie depuis `/parametres/comptabilite` |
 | Previsions de tresorerie | NON IMPLEMENTE | |
 | Tableau de flux de tresorerie | NON IMPLEMENTE | Le solde de tresorerie est disponible |
 | Ecritures de cloture / report a nouveau | NON IMPLEMENTE | Les comptes existent au plan |
@@ -149,8 +149,8 @@ charges.
 | Resultats, bulletins, devoirs, absences, emploi du temps, soldes | TERMINE | |
 | Depot de justificatif, telechargement recus/bulletins | TERMINE | |
 | Notifications (notes, absence, paiement, echeance) | TERMINE | Canal applicatif |
-| Demandes de documents et de rendez-vous | PARTIEL | Actions serveur completes ; **pas d'ecran de traitement cote etablissement** |
-| Messagerie parent ↔ ecole | PARTIEL | Modeles `MessageThread`/`Message` presents ; **pas d'ecran** |
+| Demandes de documents et de rendez-vous | TERMINE | Cote famille `/parent/demandes` (depot et suivi), cote etablissement `/demandes` (traitement, motif obligatoire pour un refus, notification systematique du demandeur) |
+| Messagerie parent ↔ ecole | TERMINE | `/messages` : fils, non-lus, reponses. **Acces par participation uniquement** : aucun role, pas meme la direction, ne lit un fil auquel il ne participe pas. Messages ni modifiables ni supprimables. 11 tests |
 | Espace eleve (notes, devoirs, remises, calendrier) | TERMINE | |
 | Espace enseignant borne a ses classes | TERMINE | Applique par les requetes, pas par l'affichage |
 
@@ -161,7 +161,7 @@ charges.
 | Annonces ciblees par audience et par classe | TERMINE | |
 | Notifications applicatives | TERMINE | |
 | E-mail, SMS, WhatsApp | NON IMPLEMENTE | Interfaces definies ; un canal non configure est marque `FAILED`, jamais `SENT` |
-| Activation des modules optionnels | PARTIEL | Les cases existent et sont enregistrees ; **les modules (bibliotheque, cantine, transport, inventaire, maintenance, evenements, anciens eleves) n'ont pas d'ecran** |
+| Activation des modules optionnels | PARTIEL | **Bibliotheque : implementee** (`/bibliotheque`, fonds, prets, retours, pertes, disponibilite calculee et non stockee, 17 tests). Les six autres modules (cantine, transport, inventaire, maintenance, evenements, anciens eleves) sont **activables mais sans ecran** : leur case n'ouvre aucune fonction |
 
 ## 15. IA et OCR
 
@@ -181,8 +181,8 @@ charges.
 | Formules Essentiel / Professionnel / Premium | TERMINE | Limites affichees, depassements signales |
 | Abonnements et changements de statut | TERMINE | **La suspension ne supprime aucune donnee** |
 | Factures SaaS distinctes des frais scolaires | TERMINE | Modeles et ecrans separes |
-| Tickets d'assistance | PARTIEL | Affichage et modele ; **pas d'ecran de reponse** |
-| Export complet des donnees d'une ecole | PARTIEL | 6 exports CSV thematiques ; **pas d'export global en un clic** |
+| Tickets d'assistance | TERMINE | Reponse horodatee depuis `/admin-saas`, statut choisi explicitement, demandeur notifie |
+| Export complet des donnees d'une ecole | TERMINE | `/api/export/etablissement` : archive JSON de 50 entites. **Exclut les empreintes de mots de passe et les jetons de session** (verifie) ; le contenu binaire des fichiers se sauvegarde separement |
 | Procedure de resiliation | PARTIEL | Statut et conservation garantis ; **procedure de suppression a declencher manuellement** |
 
 ## 17. Securite
@@ -222,7 +222,7 @@ charges.
 | Tests unitaires (monnaie, moyennes, permissions, comptabilite) | TERMINE — 153 tests |
 | Tests d'integration (paiements, pedagogie, imports, isolation) | TERMINE — 63 tests |
 | Cas limites (montant nul/negatif, doublon, rejet, annee cloturee, acces inter-ecoles) | TERMINE |
-| Tests de parcours navigateur automatises | NON IMPLEMENTE | Aucun outil de test navigateur n'etait disponible dans l'environnement. Un parcours de fumee manuel a ete execute sur 35 pages × 8 roles (voir `docs/TESTS.md`) |
+| Tests de parcours navigateur automatises | NON IMPLEMENTE | Aucun outil de test navigateur n'etait disponible dans l'environnement. Un parcours de fumee scripte couvre **43 pages × 8 roles = 344 requetes HTTP** sur le build de production (voir `docs/TESTS.md`) |
 | Tests des Server Actions via HTTP | NON IMPLEMENTE | La logique metier qu'elles appellent est testee directement |
 
 ---
@@ -231,11 +231,49 @@ charges.
 
 | Categorie | Nombre |
 |---|---|
-| **TERMINE** | 78 |
-| **PARTIEL** | 25 |
-| **NON IMPLEMENTE** | 21 |
+| **TERMINE** | 113 |
+| **PARTIEL** | 4 |
+| **NON IMPLEMENTE** | 15 |
 
-Les fonctions **PARTIEL** disposent presque toutes du modele de donnees et de la
-logique metier : il leur manque un ecran. Les fonctions **NON IMPLEMENTE** se
-concentrent sur les integrations externes (volontairement non simulees), les
-modules optionnels, et le perimetre universitaire avance.
+### Ce qui reste PARTIEL, et pourquoi
+
+- **Modules optionnels** : seule la *bibliotheque* a un ecran. Les six autres
+  cases (cantine, transport, inventaire, maintenance, evenements, anciens
+  eleves) s'enregistrent mais **n'ouvrent aucune fonction**. Les activer ne
+  donne rien : c'est dit ici plutot que decouvert en production.
+- **Procedure de resiliation** : la suspension et la conservation des donnees
+  fonctionnent et sont testees ; la suppression definitive reste un geste
+  manuel, volontairement. Une suppression automatique de donnees scolaires
+  apres impaye serait inacceptable.
+- **Recuperation de mot de passe par e-mail** : la reinitialisation par un
+  administrateur fonctionne. Le parcours autonome exige un service e-mail
+  reel ; aucun n'est branche, donc il n'est pas propose.
+- **Purge automatique** : les regles de conservation sont documentees et la
+  purge des sessions existe, mais aucune tache planifiee n'est fournie avec
+  l'application.
+
+### Ce qui reste NON IMPLEMENTE
+
+Trois familles, et aucune n'est simulee :
+
+1. **Integrations externes** — paiement en ligne, e-mail, SMS, WhatsApp, OCR.
+   Les interfaces existent, aucun prestataire n'est branche. Un canal non
+   configure est marque `FAILED`, jamais `SENT` : l'application ne pretend
+   jamais avoir envoye ce qu'elle n'a pas envoye.
+2. **Perimetre universitaire avance** — stages, memoires, soutenances, jurys,
+   diplomation.
+3. **Confort et exploitation** — exports .xlsx natifs, previsions de
+   tresorerie, ecritures de cloture, sauvegardes planifiees, chiffrement au
+   repos (a assurer au niveau du disque ou du SGBD).
+
+### Verification
+
+Chiffres de la derniere execution complete :
+
+- `npx tsc --noEmit` : aucune erreur
+- `npx vitest run` : **275 tests** dans 10 fichiers, tous verts
+- `npm run build` : 57 routes, compilation reussie
+- Parcours de fumee sur le build de production : **344 requetes
+  (43 pages × 8 roles), 0 erreur serveur**
+- Les refus d'acces observes sont des redirections vers `/acces-refuse` ou des
+  404, jamais des pages d'erreur : le controle d'acces repond, il ne plante pas.

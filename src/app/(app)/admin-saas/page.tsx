@@ -19,7 +19,7 @@ import {
   UsersIcon,
   ShieldIcon,
 } from "@/components/ui";
-import { SubscriptionStatusForm } from "./saas-forms";
+import { SubscriptionStatusForm, TicketReplyForm } from "./saas-forms";
 
 export const metadata: Metadata = { title: "Administration SaaS" };
 
@@ -327,9 +327,15 @@ export default async function SaasAdminPage() {
                       </Badge>
                     </div>
                     <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{ticket.body}</p>
+                    {ticket.resolution && (
+                      <p className="mt-2 whitespace-pre-line rounded-lg bg-slate-50 p-2.5 text-xs text-slate-700">
+                        {ticket.resolution}
+                      </p>
+                    )}
                     <p className="mt-1 text-xs text-slate-400">
                       {formatRelative(ticket.createdAt, "fr-CI")}
                     </p>
+                    <TicketReplyForm ticketId={ticket.id} currentStatus={ticket.status} />
                   </li>
                 ))}
               </ul>

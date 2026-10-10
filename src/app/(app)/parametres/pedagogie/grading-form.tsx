@@ -64,6 +64,34 @@ export function GradingSettingsForm({ settings }: { settings: GradingSettings })
         />
       </div>
 
+      <div className="mt-6">
+        <SelectField
+          name="resitRule"
+          label="Session de rattrapage"
+          defaultValue={settings.resitRule}
+          options={[
+            { value: "MEILLEURE", label: "Retenir la meilleure des deux sessions" },
+            { value: "REMPLACE", label: "Le rattrapage remplace toujours la session normale" },
+            { value: "IGNORER", label: "Ne pas tenir compte du rattrapage" },
+          ]}
+          hint="La substitution porte sur la moyenne de la matiere, pas sur une note isolee. Les deux sessions restent consultables."
+        />
+      </div>
+
+      <div className="mt-4">
+        <TextField
+          name="resitCap"
+          label="Plafond de la note de rattrapage (facultatif)"
+          inputMode="decimal"
+          defaultValue={
+            settings.resitCapCenti === null
+              ? ""
+              : (settings.resitCapCenti / 100).toFixed(2).replace(".", ",")
+          }
+          hint="Laisser vide pour ne pas plafonner. Un plafond ne ramene jamais un eleve sous sa note de session normale."
+        />
+      </div>
+
       <FormActions>
         <SubmitButton>Enregistrer les regles</SubmitButton>
       </FormActions>

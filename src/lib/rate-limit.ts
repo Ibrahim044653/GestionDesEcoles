@@ -24,6 +24,8 @@ export const RATE_LIMITS = {
   UPLOAD: { limit: 30, windowSeconds: 600, blockSeconds: 600 },
   /** Enregistrement de paiement : garde-fou contre les soumissions repetees. */
   PAYMENT: { limit: 60, windowSeconds: 300, blockSeconds: 300 },
+  /** Messagerie : assez large pour une conversation, assez etroit pour le spam. */
+  MESSAGE: { limit: 40, windowSeconds: 600, blockSeconds: 600 },
 } as const satisfies Record<string, RateLimitRule>;
 
 /**

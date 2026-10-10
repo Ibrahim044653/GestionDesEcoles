@@ -4,12 +4,14 @@ import { requirePagePermission } from "@/lib/auth/guard";
 import { PERMISSIONS } from "@/lib/permissions";
 import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/format";
+import { listAcademicYears } from "@/lib/domain/school-context";
 import { Alert, Badge, Card, DataTable, EmptyState, PageHeader, ChartIcon } from "@/components/ui";
 import {
   FinancialAccountForm,
   ExpenseCategoryForm,
   AccountingPeriodForm,
   SupplierForm,
+  BudgetForm,
 } from "./accounting-settings-forms";
 
 export const metadata: Metadata = { title: "Comptabilite" };
@@ -19,7 +21,8 @@ export default async function AccountingSettingsPage() {
   const context = await requirePagePermission(PERMISSIONS.ACCOUNT_MANAGE);
   const { school } = context;
 
-  const [ledgerAccounts, financialAccounts, categories, periods, suppliers] = await Promise.all([
+  const [ledgerAccounts, financialAccounts, categories, periods, suppliers, academicYears, budgets] =
+    await Promise.all([
     prisma.ledgerAccount.findMany({
       where: { schoolId: school.id },
       orderBy: { code: "asc" },
@@ -43,6 +46,12 @@ export default async function AccountingSettingsPage() {
       where: { schoolId: school.id },
       orderBy: { name: "asc" },
       include: { _count: { select: { expenses: true } } },
+    }),
+    listAcademicYears(school.id),
+    prisma.budget.findMany({
+      where: { schoolId: school.id },
+      orderBy: { label: "asc" },
+      include: { academicYear: { select: { name: true } } },
     }),
   ]);
 
@@ -200,6 +209,39 @@ export default async function AccountingSettingsPage() {
             )}
           </Card>
 
+          <Card
+            title="Budgets previsionnels"
+            description="Compares aux depenses reellement reglees dans l'ecran Rapports."
+            padded={false}
+          >
+            {budgets.length === 0 ? (
+              <div className="p-5">
+                <EmptyState
+                  title="Aucun budget defini"
+                  description="Sans budget, le rapprochement budget / realise reste vide."
+                />
+              </div>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: "label", label: "Poste" },
+                  { key: "year", label: "Annee" },
+                  { key: "category", label: "Categorie" },
+                  { key: "planned", label: "Montant prevu", align: "right" },
+                ]}
+              >
+                {budgets.map((budget) => (
+                  <tr key={budget.id}>
+                    <td className="font-medium text-slate-900">{budget.label}</td>
+                    <td className="text-sm text-slate-600">{budget.academicYear.name}</td>
+                    <td className="font-mono text-xs">{budget.category}</td>
+                    <td className="num">{money(budget.plannedMinor)}</td>
+                  </tr>
+                ))}
+              </DataTable>
+            )}
+          </Card>
+
           <Card title="Fournisseurs" padded={false}>
             {suppliers.length === 0 ? (
               <div className="p-5">
@@ -250,6 +292,28 @@ export default async function AccountingSettingsPage() {
 
           <Card title="Nouveau fournisseur">
             <SupplierForm />
+          </Card>
+
+          <Card title="Budget previsionnel">
+            {categories.length === 0 || academicYears.length === 0 ? (
+              <EmptyState
+                title="Prerequis manquants"
+                description="Creez d'abord une annee scolaire et au moins une categorie de depense."
+              />
+            ) : (
+              <BudgetForm
+                academicYears={academicYears.map((year) => ({
+                  id: year.id,
+                  name: year.name,
+                  isCurrent: year.isCurrent,
+                }))}
+                categories={categories.map((category) => ({
+                  code: category.code,
+                  name: category.name,
+                }))}
+                currencyLabel={school.currency}
+              />
+            )}
           </Card>
 
           <Alert tone="info" title="Principe de non-suppression">

@@ -117,6 +117,25 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   EN_LIGNE: "Paiement en ligne",
 };
 
+/** Fonctions du personnel. Distinctes des roles applicatifs (ROLES). */
+export const JOB_TITLES = {
+  ENSEIGNANT: "ENSEIGNANT",
+  DIRECTION: "DIRECTION",
+  ADMINISTRATIF: "ADMINISTRATIF",
+  COMPTABLE: "COMPTABLE",
+  CAISSIER: "CAISSIER",
+  TECHNIQUE: "TECHNIQUE",
+} as const;
+
+export const JOB_TITLE_LABELS: Record<string, string> = {
+  ENSEIGNANT: "Enseignant",
+  DIRECTION: "Direction",
+  ADMINISTRATIF: "Administratif",
+  COMPTABLE: "Comptable",
+  CAISSIER: "Caissier",
+  TECHNIQUE: "Technique",
+};
+
 export const PAYMENT_STATUSES = {
   VALIDATED: "VALIDATED",
   CANCELLED: "CANCELLED",

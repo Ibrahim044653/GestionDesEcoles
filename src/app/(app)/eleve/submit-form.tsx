@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ActionForm, SubmitButton, TextAreaField } from "@/components/client/form";
+import { ActionForm, FileField, SubmitButton, TextAreaField } from "@/components/client/form";
 import { submitAssignmentAction } from "../pedagogie/actions";
+import { uploadSubmissionAttachmentAction } from "../fichiers/actions";
 
 /**
  * Depot d'un travail par l'eleve.
@@ -53,6 +54,23 @@ export function SubmitWorkForm({
           </button>
         </div>
       </ActionForm>
+
+      {/* Depot de fichier : formulaire distinct, pour pouvoir joindre un
+          document sans avoir a ressaisir le texte deja remis. */}
+      <div className="mt-3 border-t border-slate-200 pt-3">
+        <ActionForm action={uploadSubmissionAttachmentAction} className="space-y-2" resetOnSuccess>
+          <input type="hidden" name="assignmentId" value={assignmentId} />
+          <FileField
+            name="file"
+            label="Joindre un fichier"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            hint="Photo de votre copie ou document PDF."
+          />
+          <SubmitButton className="btn-secondary btn-sm" pendingLabel="Envoi…">
+            Envoyer le fichier
+          </SubmitButton>
+        </ActionForm>
+      </div>
     </div>
   );
 }

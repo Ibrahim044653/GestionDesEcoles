@@ -9,6 +9,11 @@ import { formatScore } from "@/lib/domain/grades";
 import { getCurrentAcademicYear, listClassRooms, listSubjects } from "@/lib/domain/school-context";
 import { Badge, Card, EmptyState, PageHeader, StatCard, BookIcon } from "@/components/ui";
 import { AssignmentForm, GradeSubmissionForm } from "./assignment-forms";
+import { UploadButton } from "@/components/client/upload";
+import {
+  uploadAssignmentAttachmentAction,
+  publishAssignmentSolutionAction,
+} from "@/app/(app)/fichiers/actions";
 
 export const metadata: Metadata = { title: "Devoirs" };
 
@@ -64,9 +69,18 @@ export default async function AssignmentsPage({
         include: {
           classRoom: { select: { name: true } },
           subject: { select: { name: true } },
+          attachments: {
+            where: { deletedAt: null },
+            select: { id: true, fileName: true },
+            orderBy: { createdAt: "asc" },
+          },
           submissions: {
             include: {
               student: { select: { id: true, matricule: true, firstName: true, lastName: true } },
+              attachments: {
+                where: { deletedAt: null },
+                select: { id: true, fileName: true },
+              },
             },
             orderBy: { student: { lastName: "asc" } },
           },
@@ -178,6 +192,58 @@ export default async function AssignmentsPage({
                 </p>
               )}
 
+              <div className="border-b border-slate-200 px-5 py-4">
+                <p className="label-caps mb-2 text-slate-500">Documents du devoir</p>
+
+                {selected.attachments.length > 0 && (
+                  <ul className="mb-3 space-y-1">
+                    {selected.attachments.map((attachment) => (
+                      <li key={attachment.id}>
+                        <Link
+                          href={`/api/files/${attachment.id}`}
+                          target="_blank"
+                          className="text-sm text-brand-700 hover:underline"
+                        >
+                          {attachment.fileName}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {selected.solutionDocumentId && (
+                  <p className="mb-3 text-sm">
+                    <Link
+                      href={`/api/files/${selected.solutionDocumentId}`}
+                      target="_blank"
+                      className="font-medium text-brand-700 hover:underline"
+                    >
+                      Corrige publie
+                    </Link>
+                    <span className="ml-1.5 text-xs text-slate-500">
+                      le {formatDate(selected.solutionPublishedAt, school.locale)}
+                    </span>
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <UploadButton
+                    action={uploadAssignmentAttachmentAction}
+                    hiddenFields={{ assignmentId: selected.id }}
+                    label="Joindre un enonce"
+                    fieldLabel="Enonce ou support"
+                    hint="Visible par les eleves de la classe."
+                  />
+                  <UploadButton
+                    action={publishAssignmentSolutionAction}
+                    hiddenFields={{ assignmentId: selected.id }}
+                    label={selected.solutionDocumentId ? "Remplacer le corrige" : "Publier le corrige"}
+                    fieldLabel="Corrige"
+                    hint="Publiable uniquement apres la date limite de remise."
+                  />
+                </div>
+              </div>
+
               {selected.submissions.length === 0 ? (
                 <div className="p-6">
                   <EmptyState
@@ -234,6 +300,22 @@ export default async function AssignmentsPage({
                         <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
                           {submission.content}
                         </p>
+                      )}
+
+                      {submission.attachments.length > 0 && (
+                        <ul className="mt-2 space-y-1">
+                          {submission.attachments.map((attachment) => (
+                            <li key={attachment.id}>
+                              <Link
+                                href={`/api/files/${attachment.id}`}
+                                target="_blank"
+                                className="text-xs text-brand-700 hover:underline"
+                              >
+                                {attachment.fileName}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
                       )}
 
                       {submission.feedback && (

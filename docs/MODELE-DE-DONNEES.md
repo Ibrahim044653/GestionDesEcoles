@@ -1,6 +1,6 @@
 # Modele de donnees
 
-Source de verite : [`prisma/schema.prisma`](../prisma/schema.prisma) — 62 modeles.
+Source de verite : [`prisma/schema.prisma`](../prisma/schema.prisma) — 69 modeles.
 
 ---
 

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePagePermission, hasPermission } from "@/lib/auth/guard";
 import { PERMISSIONS } from "@/lib/permissions";
-import { ROLE_LABELS, type RoleCode } from "@/lib/constants";
+import { JOB_TITLE_LABELS, ROLE_LABELS, type RoleCode } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { getCurrentAcademicYear, listClassRooms, listSubjects } from "@/lib/domain/school-context";
@@ -22,14 +22,7 @@ import { StaffForm, StaffAccessButton, TeachingAssignmentForm } from "./staff-fo
 
 export const metadata: Metadata = { title: "Personnel" };
 
-const JOB_LABELS: Record<string, string> = {
-  ENSEIGNANT: "Enseignant",
-  DIRECTION: "Direction",
-  ADMINISTRATIF: "Administratif",
-  COMPTABLE: "Comptable",
-  CAISSIER: "Caissier",
-  TECHNIQUE: "Technique",
-};
+const JOB_LABELS = JOB_TITLE_LABELS;
 
 /** Gestion du personnel : profils, contrats, affectations et acces. */
 export default async function StaffPage({

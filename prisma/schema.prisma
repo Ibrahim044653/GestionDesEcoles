@@ -176,48 +176,50 @@ model School {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  memberships         Membership[]
-  academicYears       AcademicYear[]
-  cycles              Cycle[]
-  levels              Level[]
-  tracks              Track[]
-  classRooms          ClassRoom[]
-  subjects            Subject[]
-  teachingUnits       TeachingUnit[]
-  students            Student[]
-  guardians           Guardian[]
-  staff               Staff[]
-  enrollments         Enrollment[]
-  gradingPeriods      GradingPeriod[]
-  evaluations         Evaluation[]
-  grades              Grade[]
-  assignments         Assignment[]
-  attendances         Attendance[]
-  timetableSlots      TimetableSlot[]
-  feeItems            FeeItem[]
-  feeAssignments      FeeAssignment[]
-  installments        Installment[]
-  payments            Payment[]
-  paymentProofs       PaymentProof[]
-  receipts            Receipt[]
-  refunds             Refund[]
-  expenses            Expense[]
-  expenseCategories   ExpenseCategory[]
-  suppliers           Supplier[]
-  financialAccounts   FinancialAccount[]
-  ledgerAccounts      LedgerAccount[]
-  journalEntries      JournalEntry[]
-  accountingPeriods   AccountingPeriod[]
-  budgets             Budget[]
-  documents           Document[]
-  notifications       Notification[]
-  announcements       Announcement[]
-  messageThreads      MessageThread[]
-  auditEvents         AuditEvent[]
-  importBatches       ImportBatch[]
-  supportTickets      SupportTicket[]
-  documentRequests    DocumentRequest[]
-  appointmentRequests AppointmentRequest[]
+  memberships          Membership[]
+  academicYears        AcademicYear[]
+  cycles               Cycle[]
+  levels               Level[]
+  tracks               Track[]
+  classRooms           ClassRoom[]
+  subjects             Subject[]
+  teachingUnits        TeachingUnit[]
+  students             Student[]
+  guardians            Guardian[]
+  staff                Staff[]
+  enrollments          Enrollment[]
+  gradingPeriods       GradingPeriod[]
+  evaluations          Evaluation[]
+  grades               Grade[]
+  subjectAppreciations SubjectAppreciation[]
+  libraryItems         LibraryItem[]
+  assignments          Assignment[]
+  attendances          Attendance[]
+  timetableSlots       TimetableSlot[]
+  feeItems             FeeItem[]
+  feeAssignments       FeeAssignment[]
+  installments         Installment[]
+  payments             Payment[]
+  paymentProofs        PaymentProof[]
+  receipts             Receipt[]
+  refunds              Refund[]
+  expenses             Expense[]
+  expenseCategories    ExpenseCategory[]
+  suppliers            Supplier[]
+  financialAccounts    FinancialAccount[]
+  ledgerAccounts       LedgerAccount[]
+  journalEntries       JournalEntry[]
+  accountingPeriods    AccountingPeriod[]
+  budgets              Budget[]
+  documents            Document[]
+  notifications        Notification[]
+  announcements        Announcement[]
+  messageThreads       MessageThread[]
+  auditEvents          AuditEvent[]
+  importBatches        ImportBatch[]
+  supportTickets       SupportTicket[]
+  documentRequests     DocumentRequest[]
+  appointmentRequests  AppointmentRequest[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -228,14 +230,14 @@ model School {
 // ===========================================================================
 
 model User {
-  id           String @id @default(cuid())
-  email        String @unique
+  id           String  @id @default(cuid())
+  email        String  @unique
   passwordHash String
   firstName    String
   lastName     String
-  phone        String @default("")
-  locale       String @default("fr")
-  status       String @default("ACTIVE") // ACTIVE | DISABLED | PENDING
+  phone        String  @default("")
+  locale       String  @default("fr")
+  status       String  @default("ACTIVE") // ACTIVE | DISABLED | PENDING
   /// Super-administrateur de la plateforme SaaS (transverse, hors tenant).
   isSuperAdmin Boolean @default(false)
 
@@ -274,10 +276,10 @@ model User {
 }
 
 model Role {
-  id          String @id @default(cuid())
-  code        String @unique // SUPER_ADMIN | OWNER | DIRECTOR | ...
+  id          String  @id @default(cuid())
+  code        String  @unique // SUPER_ADMIN | OWNER | DIRECTOR | ...
   name        String
-  description String @default("")
+  description String  @default("")
   /// Role systeme : non supprimable, permissions gerees par le code.
   isSystem    Boolean @default(true)
   rank        Int     @default(100) // plus petit = plus privilegie
@@ -311,11 +313,11 @@ model RolePermission {
 /// Affectation d'un utilisateur a UNE ecole avec UN role.
 /// Un meme utilisateur peut avoir plusieurs memberships (multi-etablissements).
 model Membership {
-  id       String @id @default(cuid())
-  userId   String
-  schoolId String
-  roleId   String
-  status   String @default("ACTIVE") // ACTIVE | SUSPENDED
+  id        String  @id @default(cuid())
+  userId    String
+  schoolId  String
+  roleId    String
+  status    String  @default("ACTIVE") // ACTIVE | SUSPENDED
   /// Permissions additionnelles ou retirees (JSON {"grant":[],"revoke":[]})
   overrides String  @default("{}")
   isDefault Boolean @default(false)
@@ -353,17 +355,17 @@ model Session {
 // ===========================================================================
 
 model AcademicYear {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   schoolId  String
   name      String // "2025-2026"
   startDate DateTime
   endDate   DateTime
-  isCurrent Boolean  @default(false)
+  isCurrent Boolean   @default(false)
   /// OPEN | CLOSED : une annee cloturee bloque les ecritures et les notes.
-  status    String   @default("OPEN")
+  status    String    @default("OPEN")
   closedAt  DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
@@ -412,13 +414,13 @@ model Level {
 
 /// Filiere / serie (ex. Serie D au lycee, Licence Informatique a l'universite).
 model Track {
-  id       String @id @default(cuid())
-  schoolId String
-  code     String
-  name     String
+  id              String @id @default(cuid())
+  schoolId        String
+  code            String
+  name            String
   /// Pour l'universite : nombre de credits requis pour la diplomation.
   requiredCredits Int?
-  sortOrder       Int @default(0)
+  sortOrder       Int    @default(0)
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
@@ -484,13 +486,13 @@ model TeachingUnit {
 }
 
 model Subject {
-  id             String  @id @default(cuid())
-  schoolId       String
-  teachingUnitId String?
-  code           String
-  name           String
+  id                 String  @id @default(cuid())
+  schoolId           String
+  teachingUnitId     String?
+  code               String
+  name               String
   /// Coefficient par defaut, surchargeable par classe (ClassSubject).
-  defaultCoefficient Int @default(1)
+  defaultCoefficient Int     @default(1)
   /// Credits LMD pour l'universite (EC).
   credits            Int     @default(0)
   isActive           Boolean @default(true)
@@ -500,6 +502,7 @@ model Subject {
 
   classSubjects  ClassSubject[]
   evaluations    Evaluation[]
+  appreciations  SubjectAppreciation[]
   assignments    Assignment[]
   timetableSlots TimetableSlot[]
   attendances    Attendance[]
@@ -526,23 +529,24 @@ model ClassSubject {
 }
 
 model GradingPeriod {
-  id             String   @id @default(cuid())
-  schoolId       String
-  academicYearId String
-  name           String // "Trimestre 1", "Semestre 1"
-  kind           String   @default("TRIMESTRE") // TRIMESTRE | SEMESTRE | MODULE
-  sortOrder      Int      @default(0)
-  startDate      DateTime
-  endDate        DateTime
+  id                 String    @id @default(cuid())
+  schoolId           String
+  academicYearId     String
+  name               String // "Trimestre 1", "Semestre 1"
+  kind               String    @default("TRIMESTRE") // TRIMESTRE | SEMESTRE | MODULE
+  sortOrder          Int       @default(0)
+  startDate          DateTime
+  endDate            DateTime
   /// OPEN : saisie possible | LOCKED : resultats publies et verrouilles
-  status         String   @default("OPEN")
+  status             String    @default("OPEN")
   resultsPublishedAt DateTime?
 
   school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
 
-  evaluations Evaluation[]
-  reportCards ReportCard[]
+  evaluations          Evaluation[]
+  reportCards          ReportCard[]
+  subjectAppreciations SubjectAppreciation[]
 
   @@unique([academicYearId, name])
   @@index([schoolId, status])
@@ -585,20 +589,22 @@ model Student {
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  guardians           StudentGuardian[]
-  enrollments         Enrollment[]
-  grades              Grade[]
-  submissions         Submission[]
-  attendances         Attendance[]
-  feeAssignments      FeeAssignment[]
-  payments            Payment[]
-  paymentProofs       PaymentProof[]
-  refunds             Refund[]
-  documents           Document[]
-  reportCards         ReportCard[]
-  notifications       Notification[]
-  documentRequests    DocumentRequest[]
-  appointmentRequests AppointmentRequest[]
+  guardians            StudentGuardian[]
+  enrollments          Enrollment[]
+  grades               Grade[]
+  submissions          Submission[]
+  attendances          Attendance[]
+  feeAssignments       FeeAssignment[]
+  payments             Payment[]
+  paymentProofs        PaymentProof[]
+  refunds              Refund[]
+  documents            Document[]
+  reportCards          ReportCard[]
+  subjectAppreciations SubjectAppreciation[]
+  libraryLoans         LibraryLoan[]
+  notifications        Notification[]
+  documentRequests     DocumentRequest[]
+  appointmentRequests  AppointmentRequest[]
 
   @@unique([schoolId, matricule])
   @@index([schoolId, status])
@@ -629,12 +635,12 @@ model Guardian {
 }
 
 model StudentGuardian {
-  id         String @id @default(cuid())
-  studentId  String
-  guardianId String
+  id             String   @id @default(cuid())
+  studentId      String
+  guardianId     String
   /// PERE | MERE | TUTEUR | AUTRE
-  relation   String @default("TUTEUR")
-  isPrimary  Boolean @default(false)
+  relation       String   @default("TUTEUR")
+  isPrimary      Boolean  @default(false)
   /// Autorisations explicites du parent sur CET eleve.
   canViewGrades  Boolean  @default(true)
   canViewFinance Boolean  @default(true)
@@ -663,48 +669,50 @@ model Staff {
 
   photoDocumentId String?
   /// ENSEIGNANT | DIRECTION | ADMINISTRATIF | COMPTABLE | CAISSIER | TECHNIQUE
-  jobTitle        String  @default("ENSEIGNANT")
-  qualification   String  @default("")
+  jobTitle        String    @default("ENSEIGNANT")
+  qualification   String    @default("")
   /// CDI | CDD | VACATAIRE | STAGE
-  contractType    String  @default("CDI")
+  contractType    String    @default("CDI")
   contractStart   DateTime?
   contractEnd     DateTime?
   /// Remuneration indicative, en unites mineures. Aucun calcul de paie legale.
-  baseSalaryMinor Int     @default(0)
-  hourlyRateMinor Int     @default(0)
-  bankDetails     String  @default("")
-  status          String  @default("ACTIVE") // ACTIVE | ON_LEAVE | TERMINATED
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  baseSalaryMinor Int       @default(0)
+  hourlyRateMinor Int       @default(0)
+  bankDetails     String    @default("")
+  status          String    @default("ACTIVE") // ACTIVE | ON_LEAVE | TERMINATED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  classSubjects       ClassSubject[]
-  mainOfClasses       ClassRoom[]          @relation("ClassMainTeacher")
-  evaluations         Evaluation[]
-  assignments         Assignment[]
-  timetableSlots      TimetableSlot[]
-  attendanceMarks     Attendance[]         @relation("AttendanceRecorder")
-  staffAttendances    StaffAttendance[]
-  leaves              StaffLeave[]
-  documents           Document[]
-  appointmentRequests AppointmentRequest[]
+  classSubjects        ClassSubject[]
+  mainOfClasses        ClassRoom[]           @relation("ClassMainTeacher")
+  evaluations          Evaluation[]
+  assignments          Assignment[]
+  timetableSlots       TimetableSlot[]
+  attendanceMarks      Attendance[]          @relation("AttendanceRecorder")
+  subjectAppreciations SubjectAppreciation[]
+  libraryLoans         LibraryLoan[]
+  staffAttendances     StaffAttendance[]
+  leaves               StaffLeave[]
+  documents            Document[]
+  appointmentRequests  AppointmentRequest[]
 
   @@unique([schoolId, staffNumber])
   @@index([schoolId, status])
 }
 
 model StaffAttendance {
-  id      String   @id @default(cuid())
-  staffId String
-  date    DateTime
+  id            String   @id @default(cuid())
+  staffId       String
+  date          DateTime
   /// PRESENT | ABSENT | RETARD | CONGE
-  status      String   @default("PRESENT")
-  minutesLate Int      @default(0)
-  minutesWorked Int    @default(0)
-  note        String   @default("")
-  createdAt   DateTime @default(now())
+  status        String   @default("PRESENT")
+  minutesLate   Int      @default(0)
+  minutesWorked Int      @default(0)
+  note          String   @default("")
+  createdAt     DateTime @default(now())
 
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
@@ -738,14 +746,14 @@ model Enrollment {
   /// ACTIVE | TRANSFERRED_OUT | WITHDRAWN | COMPLETED
   status         String @default("ACTIVE")
 
-  enrolledAt DateTime  @default(now())
-  endedAt    DateTime?
-  endReason  String    @default("")
+  enrolledAt   DateTime  @default(now())
+  endedAt      DateTime?
+  endReason    String    @default("")
   /// Decision de fin d'annee : ADMIS | REDOUBLE | EXCLU | ORIENTE | EN_ATTENTE
-  decision     String   @default("EN_ATTENTE")
-  decisionNote String   @default("")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  decision     String    @default("EN_ATTENTE")
+  decisionNote String    @default("")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -774,15 +782,15 @@ model Evaluation {
   kind            String  @default("DEVOIR")
 
   date        DateTime
-  maxScore    Int      @default(20)
-  coefficient Int      @default(1)
+  maxScore    Int       @default(20)
+  coefficient Int       @default(1)
   /// DRAFT | SUBMITTED | VALIDATED | PUBLISHED
-  status      String   @default("DRAFT")
+  status      String    @default("DRAFT")
   /// Session universitaire : NORMALE | RATTRAPAGE
-  examSession String   @default("NORMALE")
+  examSession String    @default("NORMALE")
   publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   school        School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   academicYear  AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
@@ -798,7 +806,7 @@ model Evaluation {
 }
 
 model Grade {
-  id           String @id @default(cuid())
+  id           String   @id @default(cuid())
   schoolId     String
   evaluationId String
   studentId    String
@@ -840,18 +848,18 @@ model GradeRevision {
 
 /// Bulletin genere et fige pour un eleve sur une periode.
 model ReportCard {
-  id              String @id @default(cuid())
-  studentId       String
-  gradingPeriodId String
+  id                String   @id @default(cuid())
+  studentId         String
+  gradingPeriodId   String
   /// Moyenne generale en centiemes.
-  averageCenti    Int
-  rank            Int?
-  classSize       Int?
+  averageCenti      Int
+  rank              Int?
+  classSize         Int?
   classAverageCenti Int?
-  decision          String @default("")
-  appreciation      String @default("")
+  decision          String   @default("")
+  appreciation      String   @default("")
   /// Detail fige (JSON) des moyennes par matiere au moment de la generation.
-  detail            String @default("[]")
+  detail            String   @default("[]")
   documentId        String?
   publishedAt       DateTime @default(now())
   createdAt         DateTime @default(now())
@@ -863,17 +871,17 @@ model ReportCard {
 }
 
 model Assignment {
-  id          String   @id @default(cuid())
-  schoolId    String
-  classRoomId String
-  subjectId   String
-  teacherId   String?
-  title       String
-  description String   @default("")
-  dueAt       DateTime
-  maxScore    Int      @default(20)
+  id                  String    @id @default(cuid())
+  schoolId            String
+  classRoomId         String
+  subjectId           String
+  teacherId           String?
+  title               String
+  description         String    @default("")
+  dueAt               DateTime
+  maxScore            Int       @default(20)
   /// DRAFT | PUBLISHED | CLOSED
-  status      String   @default("DRAFT")
+  status              String    @default("DRAFT")
   /// Corrige publie ulterieurement.
   solutionDocumentId  String?
   solutionPublishedAt DateTime?
@@ -916,17 +924,17 @@ model Submission {
 }
 
 model Attendance {
-  id          String   @id @default(cuid())
-  schoolId    String
-  studentId   String
-  classRoomId String
-  subjectId   String?
-  date        DateTime
+  id            String   @id @default(cuid())
+  schoolId      String
+  studentId     String
+  classRoomId   String
+  subjectId     String?
+  date          DateTime
   /// PRESENT | ABSENT | RETARD | EXCUSE | RENVOYE
-  status      String   @default("PRESENT")
-  minutesLate Int      @default(0)
-  justified   Boolean  @default(false)
-  justification String @default("")
+  status        String   @default("PRESENT")
+  minutesLate   Int      @default(0)
+  justified     Boolean  @default(false)
+  justification String   @default("")
   recordedById  String?
   createdAt     DateTime @default(now())
 
@@ -985,13 +993,13 @@ model FeeItem {
   classRoomId String?
 
   /// Applique automatiquement a toute nouvelle inscription concernee.
-  isMandatory Boolean @default(true)
-  autoAssign  Boolean @default(true)
+  isMandatory     Boolean  @default(true)
+  autoAssign      Boolean  @default(true)
   /// Modele d'echeancier (JSON) :
   /// [{"label":"1ere tranche","percent":4000,"dueDate":"2025-10-15"}]
   /// percent est en CENTIEMES de pourcent (4000 = 40,00 %).
-  installmentPlan String  @default("[]")
-  isActive        Boolean @default(true)
+  installmentPlan String   @default("[]")
+  isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -1009,19 +1017,19 @@ model FeeItem {
 
 /// Frais effectivement du par UN eleve. Ligne de "facturation" scolaire.
 model FeeAssignment {
-  id             String  @id @default(cuid())
-  schoolId       String
-  studentId      String
-  academicYearId String
-  feeItemId      String?
-  label          String
-  category       String  @default("SCOLARITE")
+  id               String   @id @default(cuid())
+  schoolId         String
+  studentId        String
+  academicYearId   String
+  feeItemId        String?
+  label            String
+  category         String   @default("SCOLARITE")
   /// Montant brut avant remises.
   grossAmountMinor Int
-  currency         String @default("XOF")
+  currency         String   @default("XOF")
   /// ACTIVE | CANCELLED
-  status           String @default("ACTIVE")
-  note             String @default("")
+  status           String   @default("ACTIVE")
+  note             String   @default("")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -1040,17 +1048,17 @@ model FeeAssignment {
 
 /// Bourse, exoneration, remise fratrie, remise commerciale.
 model Discount {
-  id              String @id @default(cuid())
+  id              String   @id @default(cuid())
   feeAssignmentId String
   /// BOURSE | EXONERATION | FRATRIE | COMMERCIALE | AUTRE
-  kind            String @default("COMMERCIALE")
+  kind            String   @default("COMMERCIALE")
   label           String
   /// Soit un montant fixe, soit un pourcentage en centiemes de % (1000 = 10,00 %).
-  amountMinor  Int?
-  percentCenti Int?
-  grantedById  String?
-  reason       String   @default("")
-  createdAt    DateTime @default(now())
+  amountMinor     Int?
+  percentCenti    Int?
+  grantedById     String?
+  reason          String   @default("")
+  createdAt       DateTime @default(now())
 
   feeAssignment FeeAssignment @relation(fields: [feeAssignmentId], references: [id], onDelete: Cascade)
 
@@ -1100,18 +1108,18 @@ model Payment {
   /// deviennent un Payment qu'apres acceptation par le comptable.
   status      String @default("VALIDATED")
 
-  paidAt             DateTime @default(now())
-  externalReference  String   @default("") // ref. Mobile Money / cheque / virement
+  paidAt             DateTime  @default(now())
+  externalReference  String    @default("") // ref. Mobile Money / cheque / virement
   financialAccountId String?
   cashierId          String?
-  proofId            String?  @unique
-  note               String   @default("")
+  proofId            String?   @unique
+  note               String    @default("")
   /// Cle d'idempotence : empeche le double encaissement sur re-soumission.
   idempotencyKey     String?
   cancelledAt        DateTime?
-  cancelReason       String   @default("")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  cancelReason       String    @default("")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   school           School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student          Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -1148,17 +1156,17 @@ model PaymentAllocation {
 /// Justificatif televerse par un parent. Tant qu'il n'est pas ACCEPTE il
 /// n'augmente AUCUN encaissement valide (cahier des charges 9).
 model PaymentProof {
-  id                  String @id @default(cuid())
+  id                  String    @id @default(cuid())
   schoolId            String
   studentId           String
   declaredAmountMinor Int
-  currency            String @default("XOF")
-  declaredMethod      String @default("MOBILE_MONEY")
-  declaredReference   String @default("")
+  currency            String    @default("XOF")
+  declaredMethod      String    @default("MOBILE_MONEY")
+  declaredReference   String    @default("")
   declaredPaidAt      DateTime?
   documentId          String?
   /// EN_ATTENTE | ACCEPTE | REJETE
-  status              String @default("EN_ATTENTE")
+  status              String    @default("EN_ATTENTE")
 
   submittedById   String?
   reviewedById    String?
@@ -1183,15 +1191,15 @@ model PaymentProof {
 }
 
 model Receipt {
-  id        String @id @default(cuid())
-  schoolId  String
-  paymentId String @unique
+  id         String   @id @default(cuid())
+  schoolId   String
+  paymentId  String   @unique
   /// Numero de recu unique par ecole.
-  number    String
-  issuedAt  DateTime @default(now())
+  number     String
+  issuedAt   DateTime @default(now())
   documentId String?
   /// Contenu fige du recu (JSON) pour reimpression a l'identique.
-  snapshot   String  @default("{}")
+  snapshot   String   @default("{}")
 
   school  School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
@@ -1200,19 +1208,19 @@ model Receipt {
 }
 
 model Refund {
-  id          String   @id @default(cuid())
-  schoolId    String
-  studentId   String
-  paymentId   String?
-  amountMinor Int
-  currency    String   @default("XOF")
-  reason      String
-  method      String   @default("ESPECES")
-  status      String   @default("PENDING") // PENDING | APPROVED | PAID | REJECTED
+  id           String    @id @default(cuid())
+  schoolId     String
+  studentId    String
+  paymentId    String?
+  amountMinor  Int
+  currency     String    @default("XOF")
+  reason       String
+  method       String    @default("ESPECES")
+  status       String    @default("PENDING") // PENDING | APPROVED | PAID | REJECTED
   approvedById String?
-  paidAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   school  School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -1226,10 +1234,10 @@ model Refund {
 // ===========================================================================
 
 model ExpenseCategory {
-  id       String @id @default(cuid())
-  schoolId String
-  code     String
-  name     String
+  id                 String  @id @default(cuid())
+  schoolId           String
+  code               String
+  name               String
   /// Compte de charge par defaut du plan comptable.
   defaultAccountCode String  @default("")
   isActive           Boolean @default(true)
@@ -1299,18 +1307,18 @@ model Expense {
 
 /// Caisse ou compte bancaire de l'etablissement.
 model FinancialAccount {
-  id            String @id @default(cuid())
-  schoolId      String
-  code          String
-  name          String
-  kind          String @default("CAISSE") // CAISSE | BANQUE | MOBILE_MONEY
-  accountNumber String @default("")
-  bankName      String @default("")
-  currency      String @default("XOF")
-  openingBalanceMinor Int @default(0)
+  id                  String   @id @default(cuid())
+  schoolId            String
+  code                String
+  name                String
+  kind                String   @default("CAISSE") // CAISSE | BANQUE | MOBILE_MONEY
+  accountNumber       String   @default("")
+  bankName            String   @default("")
+  currency            String   @default("XOF")
+  openingBalanceMinor Int      @default(0)
   /// Compte du plan comptable associe (ex. 571 Caisse, 521 Banque).
-  ledgerAccountCode   String  @default("")
-  isActive            Boolean @default(true)
+  ledgerAccountCode   String   @default("")
+  isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
 
   school          School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
@@ -1322,16 +1330,16 @@ model FinancialAccount {
 }
 
 model BankReconciliation {
-  id                 String   @id @default(cuid())
-  financialAccountId String
-  periodStart        DateTime
-  periodEnd          DateTime
+  id                    String   @id @default(cuid())
+  financialAccountId    String
+  periodStart           DateTime
+  periodEnd             DateTime
   statementBalanceMinor Int
   bookBalanceMinor      Int
   differenceMinor       Int
-  status             String   @default("OPEN") // OPEN | CLOSED
-  notes              String   @default("")
-  createdAt          DateTime @default(now())
+  status                String   @default("OPEN") // OPEN | CLOSED
+  notes                 String   @default("")
+  createdAt             DateTime @default(now())
 
   financialAccount FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Cascade)
 
@@ -1340,12 +1348,12 @@ model BankReconciliation {
 
 /// Plan comptable configurable (compatible SYSCOHADA).
 model LedgerAccount {
-  id       String @id @default(cuid())
-  schoolId String
-  code     String
-  name     String
+  id           String  @id @default(cuid())
+  schoolId     String
+  code         String
+  name         String
   /// ACTIF | PASSIF | CAPITAUX | PRODUIT | CHARGE
-  type     String
+  type         String
   /// Classe SYSCOHADA 1..8
   accountClass Int     @default(0)
   parentCode   String  @default("")
@@ -1375,25 +1383,25 @@ model AccountingPeriod {
 }
 
 model JournalEntry {
-  id       String  @id @default(cuid())
-  schoolId String
-  periodId String?
+  id           String    @id @default(cuid())
+  schoolId     String
+  periodId     String?
   /// VE (ventes) | AC (achats) | BQ (banque) | CA (caisse) | OD (operations diverses)
-  journalCode String @default("OD")
-  reference   String
-  date        DateTime
-  label       String
+  journalCode  String    @default("OD")
+  reference    String
+  date         DateTime
+  label        String
   /// DRAFT | POSTED | REVERSED
   /// Une ecriture POSTED n'est JAMAIS supprimee : on la contrepasse.
-  status      String @default("DRAFT")
+  status       String    @default("DRAFT")
   /// Lien vers l'ecriture d'annulation / l'ecriture d'origine.
   reversalOfId String?
-  sourceType   String @default("MANUAL") // MANUAL | PAYMENT | EXPENSE | FEE | REFUND
-  sourceId     String @default("")
+  sourceType   String    @default("MANUAL") // MANUAL | PAYMENT | EXPENSE | FEE | REFUND
+  sourceId     String    @default("")
   postedById   String?
   postedAt     DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   school   School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   period   AccountingPeriod? @relation(fields: [periodId], references: [id], onDelete: SetNull)
@@ -1449,19 +1457,19 @@ model Budget {
 /// Fichier stocke dans un espace PRIVE. Jamais servi directement :
 /// l'acces passe par /api/files/[id] qui verifie tenant + permissions.
 model Document {
-  id       String  @id @default(cuid())
-  schoolId String?
+  id         String  @id @default(cuid())
+  schoolId   String?
   /// Cle de stockage (chemin relatif dans le driver, hors dossier public).
-  storageKey String @unique
+  storageKey String  @unique
   fileName   String
   mimeType   String
   sizeBytes  Int
-  checksum   String @default("")
+  checksum   String  @default("")
   /// LOGO | PHOTO | JUSTIFICATIF | RECU | BULLETIN | DEVOIR | REMISE |
   /// PIECE_DEPENSE | CERTIFICAT | CARTE | AUTRE
-  kind       String @default("AUTRE")
+  kind       String  @default("AUTRE")
   /// Visibilite minimale requise (controle serveur complementaire).
-  visibility String @default("STAFF") // STAFF | GUARDIAN | STUDENT | PUBLIC_SCHOOL
+  visibility String  @default("STAFF") // STAFF | GUARDIAN | STUDENT | PUBLIC_SCHOOL
 
   uploadedById String?
   studentId    String?
@@ -1487,14 +1495,14 @@ model Document {
 }
 
 model Announcement {
-  id          String  @id @default(cuid())
+  id          String    @id @default(cuid())
   schoolId    String
   classRoomId String?
   authorId    String?
   title       String
   body        String
   /// Audiences ciblees (JSON array de codes de role) ex. ["GUARDIAN","STUDENT"]
-  audiences   String  @default("[]")
+  audiences   String    @default("[]")
   publishedAt DateTime  @default(now())
   expiresAt   DateTime?
   isPinned    Boolean   @default(false)
@@ -1547,18 +1555,18 @@ model Message {
 }
 
 model Notification {
-  id        String  @id @default(cuid())
-  schoolId  String?
-  userId    String
-  studentId String?
+  id             String    @id @default(cuid())
+  schoolId       String?
+  userId         String
+  studentId      String?
   /// NOTES_PUBLIEES | ABSENCE | PAIEMENT_VALIDE | JUSTIFICATIF_REJETE |
   /// ECHEANCE_PROCHE | ANNONCE | DEVOIR | AUTRE
-  kind      String  @default("AUTRE")
-  title     String
-  body      String  @default("")
-  link      String  @default("")
+  kind           String    @default("AUTRE")
+  title          String
+  body           String    @default("")
+  link           String    @default("")
   /// Canal de diffusion reellement utilise.
-  channel   String  @default("IN_APP") // IN_APP | EMAIL | SMS | WHATSAPP
+  channel        String    @default("IN_APP") // IN_APP | EMAIL | SMS | WHATSAPP
   /// PENDING | SENT | FAILED (pour les canaux externes)
   deliveryStatus String    @default("SENT")
   readAt         DateTime?
@@ -1573,17 +1581,17 @@ model Notification {
 }
 
 model DocumentRequest {
-  id        String @id @default(cuid())
-  schoolId  String
-  studentId String
+  id            String   @id @default(cuid())
+  schoolId      String
+  studentId     String
   requestedById String?
   /// CERTIFICAT_SCOLARITE | BULLETIN | RELEVE | ATTESTATION | CARTE | AUTRE
-  kind       String  @default("CERTIFICAT_SCOLARITE")
-  note       String  @default("")
-  status     String  @default("PENDING") // PENDING | READY | DELIVERED | REJECTED
-  documentId String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  kind          String   @default("CERTIFICAT_SCOLARITE")
+  note          String   @default("")
+  status        String   @default("PENDING") // PENDING | READY | DELIVERED | REJECTED
+  documentId    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   school      School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -1593,13 +1601,13 @@ model DocumentRequest {
 }
 
 model AppointmentRequest {
-  id            String  @id @default(cuid())
+  id            String    @id @default(cuid())
   schoolId      String
   studentId     String?
   staffId       String?
   requestedById String?
   subject       String
-  message       String  @default("")
+  message       String    @default("")
   preferredAt   DateTime?
   confirmedAt   DateTime?
   status        String    @default("PENDING") // PENDING | CONFIRMED | DECLINED | DONE
@@ -1616,16 +1624,16 @@ model AppointmentRequest {
 
 /// Journal d'audit : toute operation sensible y est tracee.
 model AuditEvent {
-  id         String @id @default(cuid())
+  id         String   @id @default(cuid())
   schoolId   String?
   userId     String?
   action     String // ex. "payment.create", "auth.login.failed"
-  entityType String @default("")
-  entityId   String @default("")
+  entityType String   @default("")
+  entityId   String   @default("")
   /// Donnees NON sensibles uniquement. Jamais de mot de passe ni de cle API.
-  metadata   String @default("{}")
-  ipAddress  String @default("")
-  userAgent  String @default("")
+  metadata   String   @default("{}")
+  ipAddress  String   @default("")
+  userAgent  String   @default("")
   createdAt  DateTime @default(now())
 
   school School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
@@ -1645,15 +1653,15 @@ model ImportBatch {
   kind     String
   fileName String
 
-  totalRows     Int @default(0)
-  validRows     Int @default(0)
-  errorRows     Int @default(0)
-  duplicateRows Int @default(0)
-  importedRows  Int @default(0)
+  totalRows     Int      @default(0)
+  validRows     Int      @default(0)
+  errorRows     Int      @default(0)
+  duplicateRows Int      @default(0)
+  importedRows  Int      @default(0)
   /// PREVIEW | COMMITTED | CANCELLED
-  status        String @default("PREVIEW")
+  status        String   @default("PREVIEW")
   /// Rapport detaille (JSON) : lignes, erreurs par colonne, doublons detectes.
-  report        String @default("{}")
+  report        String   @default("{}")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1669,4 +1677,89 @@ model RateLimitBucket {
   count        Int       @default(0)
   windowStart  DateTime  @default(now())
   blockedUntil DateTime?
+}
+
+/// Appreciation portee par l'enseignant sur une matiere, pour un eleve et une
+/// periode. Distincte de l'appreciation generale du bulletin, qui releve du
+/// conseil de classe. Elle est FIGEE dans le bulletin a la generation : une
+/// modification ulterieure ne reecrit pas un bulletin deja remis.
+model SubjectAppreciation {
+  id              String  @id @default(cuid())
+  schoolId        String
+  studentId       String
+  gradingPeriodId String
+  subjectId       String
+  /// Auteur de l'appreciation, conserve pour la tracabilite.
+  teacherId       String?
+  text            String  @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school        School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student       Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  gradingPeriod GradingPeriod @relation(fields: [gradingPeriodId], references: [id], onDelete: Cascade)
+  subject       Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher       Staff?        @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, gradingPeriodId, subjectId])
+  @@index([schoolId, gradingPeriodId, subjectId])
+}
+
+/// Ouvrage ou ressource du fonds documentaire (module optionnel BIBLIOTHEQUE).
+model LibraryItem {
+  id          String  @id @default(cuid())
+  schoolId    String
+  /// Cote ou code interne, unique dans l'etablissement.
+  reference   String
+  title       String
+  author      String  @default("")
+  publisher   String  @default("")
+  isbn        String  @default("")
+  /// LIVRE | MANUEL | REVUE | MULTIMEDIA | AUTRE
+  kind        String  @default("LIVRE")
+  category    String  @default("")
+  /// Nombre d'exemplaires detenus. Les prets en cours s'en deduisent.
+  totalCopies Int     @default(1)
+  shelf       String  @default("")
+  notes       String  @default("")
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  loans  LibraryLoan[]
+
+  @@unique([schoolId, reference])
+  @@index([schoolId, isActive])
+}
+
+/// Pret d'un exemplaire a un eleve ou a un membre du personnel.
+model LibraryLoan {
+  id        String  @id @default(cuid())
+  schoolId  String
+  itemId    String
+  /// Emprunteur : un eleve OU un membre du personnel, jamais les deux.
+  studentId String?
+  staffId   String?
+
+  loanedAt   DateTime  @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+  /// EN_COURS | RENDU | PERDU
+  status     String    @default("EN_COURS")
+  condition  String    @default("")
+  notes      String    @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  item    LibraryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  student Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  staff   Staff?      @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, status])
+  @@index([itemId, status])
+  @@index([studentId, status])
 }

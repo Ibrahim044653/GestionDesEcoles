@@ -73,6 +73,12 @@ export default async function ReportsPage({
     { href: "/api/export/personnel", label: "Personnel (paie)", permission: PERMISSIONS.STAFF_EXPORT_PAYROLL },
   ].filter((entry) => hasPermission(context, entry.permission));
 
+  // L'export complet est reserve aux profils qui peuvent deja modifier
+  // l'etablissement : c'est une sortie integrale de donnees personnelles.
+  const canExportEverything =
+    hasPermission(context, PERMISSIONS.SCHOOL_UPDATE) &&
+    hasPermission(context, PERMISSIONS.REPORT_EXPORT);
+
   return (
     <>
       <PageHeader
@@ -322,6 +328,29 @@ export default async function ReportsPage({
           />
         )}
       </Card>
+
+      {/* ------------------------- Export complet (reversibilite) ------------------------- */}
+      {canExportEverything && (
+        <Card
+          title="Export complet de l'etablissement"
+          description="Toutes les donnees de l'etablissement dans un seul fichier JSON, pour une reprise hors de la plateforme."
+          className="mt-5"
+        >
+          <Alert tone="warning" title="Fichier sensible">
+            Il contient les donnees personnelles des eleves, des familles et du personnel.
+            Transmettez-le et conservez-le de maniere securisee. Les mots de passe et jetons de
+            session n&apos;y figurent pas, et le contenu des fichiers televerses doit etre
+            sauvegarde separement.
+          </Alert>
+
+          <div className="mt-4">
+            <Link href="/api/export/etablissement" className="btn-secondary">
+              <DownloadIcon className="size-4" />
+              Telecharger l&apos;export complet
+            </Link>
+          </div>
+        </Card>
+      )}
     </>
   );
 }

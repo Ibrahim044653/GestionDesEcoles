@@ -25,7 +25,24 @@ export type GradingSettings = {
   rankingEnabled: boolean;
   /** Moyenne minimale de passage, en centiemes (1000 = 10,00). */
   passMarkCenti: number;
+  /** Traitement de la session de rattrapage. */
+  resitRule: ResitRule;
+  /**
+   * Plafond applique a une moyenne issue du rattrapage, en centiemes.
+   * null = pas de plafond. Beaucoup d'etablissements plafonnent la note de
+   * rattrapage a la moyenne de passage : l'eleve valide, sans etre credite
+   * d'une mention obtenue en seconde session.
+   */
+  resitCapCenti: number | null;
 };
+
+export type ResitRule =
+  /** La session de rattrapage est ignoree dans le calcul. */
+  | "IGNORER"
+  /** Le rattrapage ne remplace la session normale que s'il est meilleur. */
+  | "MEILLEURE"
+  /** Le rattrapage remplace systematiquement la session normale. */
+  | "REMPLACE";
 
 export const DEFAULT_GRADING_SETTINGS: GradingSettings = {
   maxScore: 20,
@@ -33,6 +50,8 @@ export const DEFAULT_GRADING_SETTINGS: GradingSettings = {
   excusedAlwaysExcluded: true,
   rankingEnabled: true,
   passMarkCenti: 1000,
+  resitRule: "MEILLEURE",
+  resitCapCenti: null,
 };
 
 export function parseGradingSettings(raw: string | null | undefined): GradingSettings {
@@ -131,6 +150,88 @@ export function computeSubjectAverage(
     averageCenti: Math.round(weightedSum / totalWeight),
     countedGrades: counted,
     skippedGrades: skipped,
+  };
+}
+
+export type ResitOutcome = {
+  averageCenti: number | null;
+  countedGrades: number;
+  skippedGrades: number;
+  /** Moyenne de la session normale, conservee pour l'affichage et le PV. */
+  sessionAverageCenti: number | null;
+  /** Moyenne de la session de rattrapage, null si aucune note de rattrapage. */
+  resitAverageCenti: number | null;
+  /** Le rattrapage s'est-il reellement substitue a la session normale ? */
+  resitApplied: boolean;
+  /** Le plafond de rattrapage a-t-il ecrete la note retenue ? */
+  resitCapped: boolean;
+};
+
+/**
+ * Moyenne d'une matiere en tenant compte de la session de rattrapage.
+ *
+ * La substitution porte sur la MOYENNE DE MATIERE, pas sur chaque note : un
+ * rattrapage est une seconde chance sur l'ensemble de la matiere, pas le
+ * remplacement d'un devoir precis.
+ *
+ * Les deux moyennes sont toujours renvoyees, meme quand l'une est ecartee :
+ * un eleve doit pouvoir constater que sa note de rattrapage a bien ete prise
+ * en compte, et un conseil doit pouvoir verifier la regle appliquee.
+ *
+ * La regle ne peut jamais DEGRADER la note d'un eleve en mode "MEILLEURE" ;
+ * en mode "REMPLACE", elle le peut, et c'est un choix explicite de
+ * l'etablissement, pas un effet de bord.
+ */
+export function computeSubjectAverageWithResit(
+  normalGrades: readonly GradeEntry[],
+  resitGrades: readonly GradeEntry[],
+  settings: GradingSettings = DEFAULT_GRADING_SETTINGS,
+): ResitOutcome {
+  const normal = computeSubjectAverage(normalGrades, settings);
+
+  const base: ResitOutcome = {
+    averageCenti: normal.averageCenti,
+    countedGrades: normal.countedGrades,
+    skippedGrades: normal.skippedGrades,
+    sessionAverageCenti: normal.averageCenti,
+    resitAverageCenti: null,
+    resitApplied: false,
+    resitCapped: false,
+  };
+
+  if (settings.resitRule === "IGNORER" || resitGrades.length === 0) return base;
+
+  const resit = computeSubjectAverage(resitGrades, settings);
+  base.resitAverageCenti = resit.averageCenti;
+
+  // Un rattrapage non note (eleve absent a la seconde session, saisie non
+  // faite) ne doit surtout pas effacer la session normale.
+  if (resit.averageCenti === null) return base;
+
+  if (settings.resitRule === "MEILLEURE" && normal.averageCenti !== null) {
+    if (resit.averageCenti <= normal.averageCenti) return base;
+  }
+
+  let retained = resit.averageCenti;
+  let capped = false;
+
+  // Le plafond ne s'applique que si l'eleve y gagne encore : il ne doit pas
+  // ramener la note sous la session normale.
+  if (settings.resitCapCenti !== null && retained > settings.resitCapCenti) {
+    const floor = normal.averageCenti ?? 0;
+    const target = Math.max(settings.resitCapCenti, floor);
+    capped = target !== retained;
+    retained = target;
+  }
+
+  return {
+    averageCenti: retained,
+    countedGrades: resit.countedGrades,
+    skippedGrades: resit.skippedGrades + normal.countedGrades + normal.skippedGrades,
+    sessionAverageCenti: normal.averageCenti,
+    resitAverageCenti: resit.averageCenti,
+    resitApplied: true,
+    resitCapped: capped,
   };
 }
 

@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { requirePagePermission } from "@/lib/auth/guard";
 import { PERMISSIONS } from "@/lib/permissions";
+import { HIGHER_EDUCATION_TYPES, type SchoolType } from "@/lib/constants";
 import { getCurrentAcademicYear, listAcademicYears } from "@/lib/domain/school-context";
 import { Alert, Card, DataTable, EmptyState, PageHeader, SchoolIcon } from "@/components/ui";
-import { LevelForm, ClassRoomForm } from "./class-forms";
+import { LevelForm, ClassRoomForm, TrackForm } from "./class-forms";
 
 export const metadata: Metadata = { title: "Niveaux et classes" };
 
@@ -14,6 +15,7 @@ export default async function ClassSettingsPage() {
   const { school } = context;
 
   const currentYear = await getCurrentAcademicYear(school.id);
+  const isHigherEducation = HIGHER_EDUCATION_TYPES.includes(school.type as SchoolType);
 
   const [levels, tracks, classRooms, academicYears, teachers] = await Promise.all([
     prisma.level.findMany({
@@ -21,7 +23,11 @@ export default async function ClassSettingsPage() {
       orderBy: { sortOrder: "asc" },
       include: { _count: { select: { classRooms: true } } },
     }),
-    prisma.track.findMany({ where: { schoolId: school.id }, orderBy: { sortOrder: "asc" } }),
+    prisma.track.findMany({
+      where: { schoolId: school.id },
+      orderBy: { sortOrder: "asc" },
+      include: { _count: { select: { classRooms: true, teachingUnits: true } } },
+    }),
     prisma.classRoom.findMany({
       where: { schoolId: school.id, ...(currentYear ? { academicYearId: currentYear.id } : {}) },
       orderBy: [{ level: { sortOrder: "asc" } }, { name: "asc" }],
@@ -44,8 +50,8 @@ export default async function ClassSettingsPage() {
     <>
       <PageHeader
         breadcrumb={[{ label: "Parametres", href: "/parametres" }, { label: "Niveaux et classes" }]}
-        title="Niveaux et classes"
-        description="Les niveaux structurent le cursus ; les classes accueillent les eleves pour une annee donnee."
+        title="Niveaux, filieres et classes"
+        description="Les niveaux structurent le cursus, les filieres distinguent les parcours, et les classes accueillent les eleves pour une annee donnee."
       />
 
       {academicYears.length === 0 && (
@@ -81,6 +87,53 @@ export default async function ClassSettingsPage() {
                     <td className="font-mono text-xs">{level.code}</td>
                     <td className="font-medium text-slate-900">{level.name}</td>
                     <td className="num">{level._count.classRooms}</td>
+                  </tr>
+                ))}
+              </DataTable>
+            )}
+          </Card>
+
+          {/* ------------------------------ Filieres ------------------------------ */}
+          <Card
+            title="Filieres"
+            description="Series du secondaire ou parcours de l'enseignement superieur."
+            padded={false}
+          >
+            {tracks.length === 0 ? (
+              <div className="p-5">
+                <EmptyState
+                  title="Aucune filiere"
+                  description="Les filieres sont facultatives. Creez-les si votre etablissement distingue des series ou des parcours."
+                />
+              </div>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: "order", label: "Ordre", align: "right" },
+                  { key: "code", label: "Code" },
+                  { key: "name", label: "Libelle" },
+                  ...(isHigherEducation
+                    ? [{ key: "credits", label: "Credits requis", align: "right" as const }]
+                    : []),
+                  { key: "classes", label: "Classes", align: "right" },
+                ]}
+              >
+                {tracks.map((track) => (
+                  <tr key={track.id}>
+                    <td className="num text-slate-500">{track.sortOrder}</td>
+                    <td className="font-mono text-xs">{track.code}</td>
+                    <td className="font-medium text-slate-900">
+                      {track.name}
+                      {track._count.teachingUnits > 0 && (
+                        <span className="block text-xs text-slate-400">
+                          {track._count.teachingUnits} unite(s) d&apos;enseignement
+                        </span>
+                      )}
+                    </td>
+                    {isHigherEducation && (
+                      <td className="num text-slate-600">{track.requiredCredits ?? "—"}</td>
+                    )}
+                    <td className="num">{track._count.classRooms}</td>
                   </tr>
                 ))}
               </DataTable>
@@ -140,6 +193,10 @@ export default async function ClassSettingsPage() {
         <div className="space-y-5">
           <Card title="Nouveau niveau">
             <LevelForm nextOrder={levels.length + 1} />
+          </Card>
+
+          <Card title="Nouvelle filiere">
+            <TrackForm nextOrder={tracks.length + 1} isHigherEducation={isHigherEducation} />
           </Card>
 
           <Card title="Nouvelle classe">

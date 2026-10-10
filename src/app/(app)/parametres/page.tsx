@@ -7,6 +7,8 @@ import { SCHOOL_TYPE_LABELS, OPTIONAL_MODULE_LABELS, type SchoolType } from "@/l
 import { listIntegrations } from "@/lib/integrations";
 import { Alert, Badge, Card, PageHeader, SettingsIcon } from "@/components/ui";
 import { SchoolSettingsForm } from "./school-form";
+import { ImageUpload } from "@/components/client/upload";
+import { uploadSchoolLogoAction } from "@/app/(app)/fichiers/actions";
 
 export const metadata: Metadata = { title: "Parametres" };
 
@@ -80,7 +82,21 @@ export default async function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <div className="xl:col-span-2">
+        <div className="space-y-5 xl:col-span-2">
+          <Card
+            title="Logo de l'etablissement"
+            description="Affiche sur les recus, bulletins et certificats remis aux familles."
+          >
+            <ImageUpload
+              action={uploadSchoolLogoAction}
+              currentDocumentId={school.logoDocumentId}
+              label="Nouveau logo"
+              emptyLabel="Aucun logo"
+              width={150}
+              height={150}
+            />
+          </Card>
+
           <Card title="Identite de l'etablissement">
             <SchoolSettingsForm
               school={{

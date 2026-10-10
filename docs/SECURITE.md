@@ -203,6 +203,38 @@ Recommandations :
 
 ---
 
+## 10 bis. Export complet d'un etablissement
+
+`Rapports > Export complet` produit une archive JSON de toutes les donnees de
+l'etablissement actif, pour garantir la **reversibilite** : une ecole qui quitte
+la plateforme repart avec ses donnees dans un format lisible.
+
+**Ce que l'archive ne contient pas, et pourquoi :**
+
+- Les **empreintes de mots de passe**, **jetons de session** et **jetons de
+  reinitialisation**. Ce sont des secrets d'authentification, pas des donnees
+  de l'ecole. Les exporter creerait un fichier dont la fuite compromettrait des
+  comptes.
+- Le **contenu binaire des fichiers televerses**. Seules les metadonnees des
+  documents y figurent ; les fichiers se recuperent par sauvegarde du
+  repertoire de stockage (voir `DEPLOIEMENT.md`).
+
+**Ce qu'elle contient, et ce que cela implique :** l'identite complete des
+eleves, des familles et du personnel, leurs resultats et leur situation
+financiere. C'est le fichier le plus sensible que l'application sache produire.
+
+**Garde-fous :**
+
+- Reserve aux comptes cumulant `school.update` **et** `report.export` ; un
+  parent ou un enseignant recoit un 403.
+- Chaque export est inscrit au journal d'audit, avec l'auteur et le volume.
+- Reponse en `Cache-Control: private, no-store` : aucun intermediaire ne doit
+  en conserver de copie.
+
+Transmettez-le par un canal chiffre et supprimez-le des qu'il a servi.
+
+---
+
 ## 11. Signaler une vulnerabilite
 
 Ne publiez pas de faille dans un suivi public. Contactez le responsable

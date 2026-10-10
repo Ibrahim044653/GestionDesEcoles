@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePagePermission, hasPermission, assertSameSchoolOrNotFound } from "@/lib/auth/guard";
@@ -34,6 +35,11 @@ import {
   CheckIcon,
 } from "@/components/ui";
 import { GuardianForm, StudentStatusForm, EnrollmentForm } from "./forms";
+import { ImageUpload, StudentDocumentUpload } from "@/components/client/upload";
+import {
+  uploadStudentPhotoAction,
+  uploadStudentDocumentAction,
+} from "@/app/(app)/fichiers/actions";
 
 export const metadata: Metadata = { title: "Dossier eleve" };
 
@@ -414,6 +420,29 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
         {/* ----------------------------- Colonne droite ----------------------------- */}
         <div className="space-y-5">
+          <Card title="Photographie">
+            {canUpdate ? (
+              <ImageUpload
+                action={uploadStudentPhotoAction}
+                hiddenFields={{ studentId: student.id }}
+                currentDocumentId={student.photoDocumentId}
+                label="Photo de l'eleve"
+                emptyLabel="Aucune photo"
+              />
+            ) : student.photoDocumentId ? (
+              <Image
+                src={`/api/files/${student.photoDocumentId}`}
+                alt="Photographie de l'eleve"
+                width={120}
+                height={150}
+                unoptimized
+                className="rounded-lg border border-slate-200 object-cover"
+              />
+            ) : (
+              <p className="text-sm text-slate-500">Aucune photo enregistree.</p>
+            )}
+          </Card>
+
           <Card title="Identite">
             <FieldGrid cols={2}>
               <Field label="Date de naissance">{formatDate(student.birthDate, school.locale)}</Field>
@@ -508,6 +537,47 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   <GuardianForm studentId={student.id} />
                 </div>
               </details>
+            )}
+          </Card>
+
+          {/* ------------------------- Documents du dossier ------------------------- */}
+          <Card title="Documents du dossier" padded={false}>
+            {student.documents.length === 0 ? (
+              <div className="p-5">
+                <EmptyState
+                  title="Aucun document"
+                  description="Actes, certificats et pieces du dossier apparaissent ici."
+                />
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {student.documents.map((document) => (
+                  <li
+                    key={document.id}
+                    className="flex items-center justify-between gap-2 px-4 py-2.5"
+                  >
+                    <Link
+                      href={`/api/files/${document.id}`}
+                      target="_blank"
+                      className="min-w-0 truncate text-sm text-brand-700 hover:underline"
+                    >
+                      {document.fileName}
+                    </Link>
+                    <span className="shrink-0 text-xs text-slate-400">
+                      {Math.round(document.sizeBytes / 1024)} Ko
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {canUpdate && (
+              <div className="border-t border-slate-200 p-4">
+                <StudentDocumentUpload
+                  action={uploadStudentDocumentAction}
+                  studentId={student.id}
+                />
+              </div>
             )}
           </Card>
 

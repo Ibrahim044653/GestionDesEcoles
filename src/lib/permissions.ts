@@ -374,3 +374,168 @@ export function effectivePermissions(
   for (const revoked of overrides?.revoke ?? []) result.delete(revoked);
   return result;
 }
+
+/**
+ * Libelles francais des permissions, pour l'editeur de surcharges.
+ *
+ * Ils decrivent ce que la permission AUTORISE, pas l'ecran ou elle s'applique :
+ * un administrateur doit comprendre ce qu'il accorde sans connaitre le code.
+ */
+export const PERMISSION_LABELS: Record<string, string> = {
+  "school.view": "Consulter la fiche de l'etablissement",
+  "school.update": "Modifier la fiche de l'etablissement",
+  "school.create": "Creer un etablissement",
+  "school.configure_academic": "Configurer la pedagogie (annees, periodes, bareme)",
+  "school.configure_finance": "Configurer les finances (comptes, penalites, remises)",
+
+  "user.view": "Consulter les comptes utilisateurs",
+  "user.create": "Creer un compte utilisateur",
+  "user.update": "Modifier un compte utilisateur",
+  "user.disable": "Desactiver un compte utilisateur",
+  "membership.manage": "Gerer les rattachements et les roles",
+
+  "student.view": "Consulter tous les eleves",
+  "student.view_own": "Consulter uniquement ses propres eleves (parent, eleve)",
+  "student.create": "Inscrire un eleve",
+  "student.update": "Modifier la fiche d'un eleve",
+  "student.archive": "Archiver un eleve",
+  "student.import": "Importer des eleves en masse",
+  "student.export": "Exporter la liste des eleves",
+  "enrollment.manage": "Gerer les inscriptions et les decisions de fin d'annee",
+
+  "staff.view": "Consulter le personnel",
+  "staff.create": "Ajouter un membre du personnel",
+  "staff.update": "Modifier un membre du personnel, pointer les presences",
+  "staff.export_payroll": "Exporter les donnees de paie",
+
+  "subject.manage": "Gerer les matieres et les unites d'enseignement",
+  "timetable.view": "Consulter l'emploi du temps",
+  "timetable.manage": "Modifier l'emploi du temps",
+  "evaluation.view": "Consulter les evaluations",
+  "evaluation.manage": "Creer et modifier des evaluations",
+  "grade.enter": "Saisir des notes et des appreciations",
+  "grade.validate": "Valider des notes saisies",
+  "grade.publish": "Publier les resultats aux familles",
+  "grade.view_all": "Consulter toutes les notes de l'etablissement",
+  "grade.view_own": "Consulter uniquement ses propres notes",
+  "reportcard.generate": "Generer les bulletins et tenir le conseil de classe",
+  "attendance.view": "Consulter les absences des eleves",
+  "attendance.record": "Saisir les absences des eleves",
+  "assignment.manage": "Creer et gerer des devoirs",
+  "assignment.view_own": "Consulter ses propres devoirs",
+  "assignment.submit": "Deposer un travail",
+  "assignment.grade": "Corriger et noter les remises",
+
+  "fee.view": "Consulter les frais scolaires",
+  "fee.manage": "Creer et modifier les frais, appliquer les penalites",
+  "fee.assign": "Affecter des frais a un eleve",
+  "discount.grant": "Accorder une remise ou une bourse",
+  "student_account.view": "Consulter le compte financier de tout eleve",
+  "student_account.view_own": "Consulter uniquement son propre compte financier",
+
+  "payment.view": "Consulter les encaissements",
+  "payment.create": "Enregistrer un encaissement",
+  "payment.cancel": "Annuler un encaissement (par contrepassation)",
+  "receipt.issue": "Emettre un recu",
+  "receipt.view_own": "Consulter ses propres recus",
+  "proof.submit": "Deposer un justificatif de paiement",
+  "proof.view": "Consulter les justificatifs deposes",
+  "proof.review": "Accepter ou refuser un justificatif",
+  "refund.request": "Demander un remboursement",
+  "refund.approve": "Approuver et payer un remboursement",
+
+  "expense.view": "Consulter les depenses",
+  "expense.create": "Saisir une depense",
+  "expense.approve": "Approuver une depense",
+  "expense.pay": "Payer une depense",
+  "supplier.manage": "Gerer les fournisseurs",
+  "account.manage": "Gerer le plan comptable et les comptes financiers",
+  "journal.view": "Consulter le journal comptable",
+  "journal.post": "Passer une ecriture comptable",
+  "journal.reverse": "Contrepasser une ecriture comptable",
+  "period.close": "Cloturer un exercice comptable",
+  "reconciliation.manage": "Effectuer les rapprochements bancaires",
+
+  "dashboard.owner": "Tableau de bord proprietaire",
+  "dashboard.direction": "Tableau de bord direction",
+  "dashboard.academic": "Tableau de bord pedagogique",
+  "dashboard.finance": "Tableau de bord financier",
+  "report.export": "Exporter les rapports",
+
+  "announcement.view": "Consulter les annonces",
+  "announcement.manage": "Publier des annonces",
+  "message.send": "Utiliser la messagerie interne",
+  "document.request": "Demander un document officiel",
+  "document.fulfill": "Traiter les demandes de documents",
+  "appointment.request": "Demander un rendez-vous",
+  "appointment.manage": "Traiter les demandes de rendez-vous",
+
+  "audit.view": "Consulter le journal d'audit",
+  "saas.admin": "Administration de la plateforme SaaS",
+};
+
+/** Regroupement des permissions pour l'affichage, dans l'ordre du catalogue. */
+export const PERMISSION_GROUPS: { label: string; prefixes: string[] }[] = [
+  { label: "Etablissement et configuration", prefixes: ["school."] },
+  { label: "Utilisateurs et roles", prefixes: ["user.", "membership."] },
+  { label: "Eleves et inscriptions", prefixes: ["student.", "student_account.", "enrollment."] },
+  { label: "Personnel", prefixes: ["staff."] },
+  {
+    label: "Pedagogie",
+    prefixes: [
+      "subject.",
+      "timetable.",
+      "evaluation.",
+      "grade.",
+      "reportcard.",
+      "attendance.",
+      "assignment.",
+    ],
+  },
+  { label: "Frais et remises", prefixes: ["fee.", "discount."] },
+  { label: "Encaissements", prefixes: ["payment.", "receipt.", "proof.", "refund."] },
+  {
+    label: "Depenses et comptabilite",
+    prefixes: [
+      "expense.",
+      "supplier.",
+      "account.",
+      "journal.",
+      "period.",
+      "reconciliation.",
+    ],
+  },
+  { label: "Pilotage et rapports", prefixes: ["dashboard.", "report."] },
+  {
+    label: "Communication",
+    prefixes: ["announcement.", "message.", "document.", "appointment."],
+  },
+  { label: "Securite", prefixes: ["audit."] },
+];
+
+/**
+ * Permissions qu'une surcharge de membership ne peut jamais accorder.
+ *
+ * `saas.admin` est transverse aux etablissements : l'accorder depuis l'ecran
+ * d'une ecole permettrait a un administrateur local de s'octroyer un acces a
+ * TOUTES les ecoles de la plateforme. Il ne se donne que par le drapeau
+ * `isSuperAdmin` du compte, hors du contexte d'un tenant.
+ */
+export const NON_GRANTABLE_PERMISSIONS: string[] = [PERMISSIONS.SAAS_ADMIN];
+
+/** Permissions pouvant faire l'objet d'une surcharge, groupees pour l'affichage. */
+export function grantablePermissionGroups(): {
+  label: string;
+  permissions: { code: string; label: string }[];
+}[] {
+  const all = Object.values(PERMISSIONS).filter(
+    (code) => !NON_GRANTABLE_PERMISSIONS.includes(code),
+  );
+
+  return PERMISSION_GROUPS.map((group) => ({
+    label: group.label,
+    permissions: all
+      .filter((code) => group.prefixes.some((prefix) => code.startsWith(prefix)))
+      .map((code) => ({ code, label: PERMISSION_LABELS[code] ?? code })),
+  })).filter((group) => group.permissions.length > 0);
+}

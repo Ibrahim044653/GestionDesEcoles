@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ActionForm, SubmitButton } from "@/components/client/form";
-import { updateSubscriptionStatusAction } from "./actions";
+import {
+  ActionForm,
+  SelectField,
+  SubmitButton,
+  TextAreaField,
+} from "@/components/client/form";
+import { replySupportTicketAction, updateSubscriptionStatusAction } from "./actions";
 
 const STATUS_OPTIONS = [
   { value: "TRIAL", label: "Essai" },
@@ -63,6 +68,62 @@ export function SubscriptionStatusForm({
       >
         Appliquer
       </SubmitButton>
+    </ActionForm>
+  );
+}
+
+/**
+ * Reponse a un ticket d'assistance.
+ *
+ * Le statut est choisi explicitement : repondre ne ferme pas automatiquement
+ * un ticket, et fermer sans repondre n'est pas possible.
+ */
+export function TicketReplyForm({
+  ticketId,
+  currentStatus,
+}: {
+  ticketId: string;
+  currentStatus: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="btn-secondary btn-sm">
+        Repondre
+      </button>
+    );
+  }
+
+  return (
+    <ActionForm action={replySupportTicketAction} className="mt-2 space-y-2">
+      <input type="hidden" name="ticketId" value={ticketId} />
+      <TextAreaField
+        name="reply"
+        label="Reponse"
+        rows={3}
+        required
+        hint="Transmise au demandeur sous forme de notification."
+      />
+      <SelectField
+        name="status"
+        label="Statut apres reponse"
+        defaultValue={currentStatus === "OPEN" ? "PENDING" : currentStatus}
+        options={[
+          { value: "PENDING", label: "En cours de traitement" },
+          { value: "RESOLVED", label: "Resolu" },
+          { value: "CLOSED", label: "Clos" },
+          { value: "OPEN", label: "Laisser ouvert" },
+        ]}
+      />
+      <div className="flex gap-2">
+        <SubmitButton className="btn-primary btn-sm" pendingLabel="Envoi…">
+          Envoyer la reponse
+        </SubmitButton>
+        <button type="button" onClick={() => setOpen(false)} className="btn-secondary btn-sm">
+          Annuler
+        </button>
+      </div>
     </ActionForm>
   );
 }

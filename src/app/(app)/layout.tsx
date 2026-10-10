@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
+import { countUnreadThreads } from "@/lib/domain/messaging";
 import { PERMISSIONS } from "@/lib/permissions";
 import { initials } from "@/lib/format";
 import { AppShell, type NavEntry } from "@/components/client/shell";
@@ -17,7 +18,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const context = await getAuthContext();
   if (!context) redirect("/connexion");
 
-  const [unreadNotifications, pendingProofs, pendingSubmissions] = await Promise.all([
+  const [unreadNotifications, pendingProofs, pendingSubmissions, pendingRequests, unreadMessages] =
+    await Promise.all([
     prisma.notification.count({ where: { userId: context.user.id, readAt: null } }),
     context.permissions.has(PERMISSIONS.PROOF_REVIEW) && context.school
       ? prisma.paymentProof.count({ where: { schoolId: context.school.id, status: "EN_ATTENTE" } })
@@ -30,11 +32,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           },
         })
       : Promise.resolve(0),
+    context.permissions.has(PERMISSIONS.DOCUMENT_FULFILL) && context.school
+      ? prisma.documentRequest.count({
+          where: { schoolId: context.school.id, status: "PENDING" },
+        })
+      : Promise.resolve(0),
+    context.permissions.has(PERMISSIONS.MESSAGE_SEND) && context.school
+      ? countUnreadThreads(context.school.id, context.user.id)
+      : Promise.resolve(0),
   ]);
 
   const navigation = buildNavigation(context.permissions, {
     pendingProofs,
     pendingSubmissions,
+    pendingRequests,
+    unreadMessages,
     isSuperAdmin: context.user.isSuperAdmin,
   });
 
@@ -64,7 +76,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
  */
 function buildNavigation(
   permissions: Set<string>,
-  options: { pendingProofs: number; pendingSubmissions: number; isSuperAdmin: boolean },
+  options: {
+    pendingProofs: number;
+    pendingSubmissions: number;
+    pendingRequests: number;
+    unreadMessages: number;
+    isSuperAdmin: boolean;
+  },
 ): NavEntry[] {
   const P = PERMISSIONS;
   const can = (permission: string) => permissions.has(permission);
@@ -95,6 +113,10 @@ function buildNavigation(
   add({ href: "/eleves", label: "Eleves", icon: "users", section: "Scolarite" }, can(P.STUDENT_VIEW));
   add({ href: "/classes", label: "Classes", icon: "school", section: "Scolarite" }, can(P.STUDENT_VIEW));
   add({ href: "/personnel", label: "Personnel", icon: "building", section: "Scolarite" }, can(P.STAFF_VIEW));
+  add(
+    { href: "/personnel/presences", label: "Presences du personnel", icon: "calendar", section: "Scolarite" },
+    can(P.STAFF_VIEW),
+  );
 
   // --- Pedagogie ---
   add(
@@ -104,6 +126,14 @@ function buildNavigation(
   add(
     { href: "/pedagogie/bulletins", label: "Bulletins", icon: "file", section: "Pedagogie" },
     can(P.REPORTCARD_GENERATE) || can(P.GRADE_VIEW_ALL),
+  );
+  add(
+    { href: "/pedagogie/appreciations", label: "Appreciations", icon: "file", section: "Pedagogie" },
+    can(P.GRADE_ENTER),
+  );
+  add(
+    { href: "/pedagogie/conseil", label: "Conseil de classe", icon: "clipboard", section: "Pedagogie" },
+    can(P.REPORTCARD_GENERATE),
   );
   add(
     {
@@ -148,11 +178,51 @@ function buildNavigation(
     { href: "/finance/comptabilite", label: "Comptabilite", icon: "chart", section: "Finances" },
     can(P.JOURNAL_VIEW),
   );
+  add(
+    { href: "/finance/rapprochement", label: "Rapprochement bancaire", icon: "wallet", section: "Finances" },
+    can(P.RECONCILIATION_MANAGE),
+  );
+  add(
+    { href: "/finance/automatisations", label: "Penalites et remises", icon: "receipt", section: "Finances" },
+    can(P.FEE_MANAGE),
+  );
 
   // --- Communication ---
   add(
     { href: "/annonces", label: "Annonces", icon: "bell", section: "Communication" },
     can(P.ANNOUNCEMENT_VIEW),
+  );
+  add(
+    {
+      href: "/messages",
+      label: "Messages",
+      icon: "bell",
+      section: "Communication",
+      badge: options.unreadMessages,
+    },
+    can(P.MESSAGE_SEND),
+  );
+  add(
+    {
+      href: "/demandes",
+      label: "Demandes des familles",
+      icon: "file",
+      section: "Communication",
+      badge: options.pendingRequests,
+    },
+    can(P.DOCUMENT_FULFILL),
+  );
+  add(
+    { href: "/parent/demandes", label: "Mes demandes", icon: "file", section: "Mon espace" },
+    can(P.DOCUMENT_REQUEST) || can(P.APPOINTMENT_REQUEST),
+  );
+
+  // --- Modules optionnels ---
+  // L'entree reste visible meme module desactive : la page explique alors
+  // comment l'activer, plutot que de renvoyer un 404 incomprehensible.
+  add(
+    { href: "/bibliotheque", label: "Bibliotheque", icon: "book", section: "Modules" },
+    can(P.STUDENT_VIEW),
   );
 
   // --- Administration ---

@@ -6,7 +6,7 @@ import {
   computeClassAverage,
   computeGeneralAverage,
   computeRanking,
-  computeSubjectAverage,
+  computeSubjectAverageWithResit,
   parseGradingSettings,
   suggestAppreciation,
   type GradeEntry,
@@ -28,7 +28,13 @@ export type StudentPeriodResult = {
   matricule: string;
   firstName: string;
   lastName: string;
-  subjects: (SubjectAverage & { credits: number })[];
+  subjects: (SubjectAverage & {
+    credits: number;
+    /** Moyenne de la session normale, avant eventuelle substitution. */
+    sessionAverageCenti: number | null;
+    resitAverageCenti: number | null;
+    resitApplied: boolean;
+  })[];
   averageCenti: number | null;
   totalCoefficient: number;
 };
@@ -88,22 +94,30 @@ export async function computeClassResults(
   const results: StudentPeriodResult[] = classRoom.enrollments.map((enrollment) => {
     const student = enrollment.student;
 
-    const subjects: (SubjectAverage & { credits: number })[] = classRoom.classSubjects.map(
+    const subjects: StudentPeriodResult["subjects"] = classRoom.classSubjects.map(
       (classSubject) => {
-        const entries: GradeEntry[] = evaluations
-          .filter((evaluation) => evaluation.subjectId === classSubject.subjectId)
-          .map((evaluation) => {
-            const grade = evaluation.grades.find((g) => g.studentId === student.id);
-            return {
-              scoreCenti: grade?.scoreCenti ?? null,
-              isAbsent: grade?.isAbsent ?? false,
-              isExcused: grade?.isExcused ?? false,
-              maxScore: evaluation.maxScore,
-              coefficient: evaluation.coefficient,
-            };
-          });
+        const toEntry = (evaluation: (typeof evaluations)[number]): GradeEntry => {
+          const grade = evaluation.grades.find((g) => g.studentId === student.id);
+          return {
+            scoreCenti: grade?.scoreCenti ?? null,
+            isAbsent: grade?.isAbsent ?? false,
+            isExcused: grade?.isExcused ?? false,
+            maxScore: evaluation.maxScore,
+            coefficient: evaluation.coefficient,
+          };
+        };
 
-        const computed = computeSubjectAverage(entries, settings);
+        const forSubject = evaluations.filter(
+          (evaluation) => evaluation.subjectId === classSubject.subjectId,
+        );
+
+        // Les deux sessions sont calculees separement : la substitution porte
+        // sur la moyenne de matiere, jamais sur une note isolee.
+        const computed = computeSubjectAverageWithResit(
+          forSubject.filter((e) => e.examSession !== "RATTRAPAGE").map(toEntry),
+          forSubject.filter((e) => e.examSession === "RATTRAPAGE").map(toEntry),
+          settings,
+        );
 
         return {
           subjectId: classSubject.subjectId,
@@ -113,6 +127,9 @@ export async function computeClassResults(
           averageCenti: computed.averageCenti,
           countedGrades: computed.countedGrades,
           skippedGrades: computed.skippedGrades,
+          sessionAverageCenti: computed.sessionAverageCenti,
+          resitAverageCenti: computed.resitAverageCenti,
+          resitApplied: computed.resitApplied,
         };
       },
     );
@@ -168,6 +185,36 @@ export async function generateReportCards(input: {
   });
   const settings = parseGradingSettings(school?.gradingSettings);
 
+  // Appreciations de matiere saisies par les enseignants : elles sont FIGEES
+  // dans le bulletin, comme les moyennes. Une reecriture ulterieure par un
+  // enseignant ne modifie pas un bulletin deja remis a la famille.
+  const appreciations = await prisma.subjectAppreciation.findMany({
+    where: {
+      schoolId: input.schoolId,
+      gradingPeriodId: input.gradingPeriodId,
+      studentId: { in: results.map((result) => result.studentId) },
+    },
+    select: { studentId: true, subjectId: true, text: true },
+  });
+
+  const appreciationByKey = new Map(
+    appreciations.map((item) => [`${item.studentId}:${item.subjectId}`, item.text]),
+  );
+
+  const buildDetail = (result: (typeof results)[number]) =>
+    JSON.stringify(
+      result.subjects.map((subject) => ({
+        subjectName: subject.subjectName,
+        coefficient: subject.coefficient,
+        averageCenti: subject.averageCenti,
+        credits: subject.credits,
+        appreciation: appreciationByKey.get(`${result.studentId}:${subject.subjectId}`) ?? "",
+        resitApplied: subject.resitApplied,
+        sessionAverageCenti: subject.sessionAverageCenti,
+        resitAverageCenti: subject.resitAverageCenti,
+      })),
+    );
+
   for (const result of results) {
     const rank = ranks.get(result.studentId) ?? null;
 
@@ -187,28 +234,14 @@ export async function generateReportCards(input: {
         classAverageCenti,
         appreciation: suggestAppreciation(result.averageCenti, settings.maxScore),
         decision: "",
-        detail: JSON.stringify(
-          result.subjects.map((subject) => ({
-            subjectName: subject.subjectName,
-            coefficient: subject.coefficient,
-            averageCenti: subject.averageCenti,
-            credits: subject.credits,
-          })),
-        ),
+        detail: buildDetail(result),
       },
       update: {
         averageCenti: result.averageCenti ?? 0,
         rank,
         classSize: results.length,
         classAverageCenti,
-        detail: JSON.stringify(
-          result.subjects.map((subject) => ({
-            subjectName: subject.subjectName,
-            coefficient: subject.coefficient,
-            averageCenti: subject.averageCenti,
-            credits: subject.credits,
-          })),
-        ),
+        detail: buildDetail(result),
       },
     });
   }

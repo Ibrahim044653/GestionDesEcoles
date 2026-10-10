@@ -187,6 +187,103 @@ brouillon n'influence aucune moyenne.
 
 ---
 
+## 6 bis. Conseil de classe et appreciations
+
+**Appreciations par matiere** — `Pedagogie > Appreciations`
+Chaque enseignant redige l'appreciation de **sa** matiere pour sa classe. Le
+serveur verifie l'affectation : un enseignant ne peut pas ecrire sur une
+matiere qu'il n'assure pas, meme en manipulant l'adresse.
+Une appreciation laissee vide est supprimee, pour ne pas imprimer de ligne vide
+sur le bulletin.
+
+**Conseil de classe** — `Pedagogie > Conseil de classe`
+1. Generez d'abord les bulletins de la periode : le conseil delibere sur des
+   moyennes **figees**, pas sur un calcul qui bougerait pendant la seance. Si
+   des bulletins manquent, l'ecran le dit.
+2. Le bouton « Proposer selon la moyenne de passage » pre-remplit les
+   decisions. **C'est une aide a la saisie, pas une decision** : modifiez
+   librement chaque ligne.
+3. Enregistrez. Toutes les decisions partent en une seule fois : un conseil
+   interrompu a mi-parcours ne laisse pas la moitie des eleves sans decision.
+4. Editez le proces-verbal PDF. Il mentionne explicitement les eleves sans
+   bulletin ou sans decision : un PV incomplet doit se voir.
+
+Une annee cloturee refuse toute modification de decision.
+
+**Rattrapage** — `Parametres > Pedagogie`
+Choisissez la regle : retenir la meilleure des deux sessions, remplacer
+systematiquement, ou ignorer le rattrapage. Un plafond facultatif permet de
+limiter la note de seconde session — il ne ramene jamais un eleve sous sa note
+de session normale. Les deux sessions restent lisibles sur le bulletin, et les
+matieres rattrapees y sont signalees par un asterisque.
+
+---
+
+## 6 ter. Penalites, remises et rapprochement
+
+**Penalites de retard et remise fratrie** — `Finances > Penalites et remises`
+
+Rien ne s'applique tout seul. L'ecran fonctionne en deux temps :
+1. vous definissez la regle (elle ne modifie aucun compte) ;
+2. vous consultez l'apercu — quelles familles, quels montants — puis vous
+   declenchez l'application, qui est tracee au journal d'audit.
+
+La penalite porte sur le **reste du**, pas sur le montant initial : une famille
+qui a deja paye l'essentiel n'est pas penalisee comme si elle n'avait rien
+verse. Elle est **recalculee** a chaque execution, jamais cumulee : relancer le
+traitement deux fois le meme jour ne double pas la penalite.
+
+En mode « pourcentage par jour », definissez un plafond. Sans plafond, le
+montant devient vite disproportionne.
+
+Une remise fratrie deja accordee sur un frais n'est jamais ecrasee : vous avez
+pu negocier un taux particulier.
+
+**Rapprochement bancaire** — `Finances > Rapprochement bancaire`
+
+Saisissez le solde final du releve et la periode. L'application reconstitue le
+solde comptable (solde d'ouverture + encaissements valides − depenses payees)
+et fige l'ecart.
+
+L'ecart n'est **jamais corrige automatiquement** et aucune ecriture n'est
+passee. Si l'ecart n'est pas nul, la cloture exige une explication ecrite :
+cheques en circulation, virement non credite, frais bancaires. Clore en
+silence un rapprochement qui ne tombe pas juste reviendrait a effacer le
+probleme.
+
+---
+
+## 6 quater. Presences du personnel, demandes et messagerie
+
+**Presences du personnel** — `Scolarite > Presences du personnel`
+Feuille quotidienne : present, absent, retard (en minutes), conge. Les
+demandes de conge s'approuvent depuis le meme ecran ; l'approbation marque les
+journees concernees en conge, **sans ecraser une presence ou un retard deja
+constate** — un fait observe prime sur une regularisation administrative.
+
+Aucune retenue sur salaire et aucun solde de conges ne sont calcules : ces
+regles dependent du droit du travail applicable et doivent etre traitees hors
+de l'application.
+
+**Demandes des familles** — `Communication > Demandes des familles`
+Les familles demandent documents et rendez-vous depuis `Mon espace > Mes
+demandes`. Vous les traitez ici. Un refus exige un motif, transmis a la
+famille ; aucun changement de statut n'est silencieux.
+
+**Messagerie** — `Communication > Messages`
+Un fil n'est lisible que par ses **participants**. Il n'existe aucune vue
+« tous les messages de l'ecole », meme pour la direction : c'est une
+conversation, pas un registre. Les messages ne peuvent etre ni modifies ni
+supprimes apres envoi.
+
+**Permissions fines** — `Parametres > Utilisateurs et roles > Permissions`
+Vous pouvez ajouter ou retirer une permission a une personne precise, en ecart
+de son role. Les ecarts sont signales en couleur et rappeles en haut de page.
+Retirer une permission ferme reellement l'action : ce n'est pas un simple
+masquage de bouton. Vous ne pouvez pas modifier vos propres permissions.
+
+---
+
 ## 7. Comprendre les chiffres
 
 Quatre grandeurs souvent confondues :

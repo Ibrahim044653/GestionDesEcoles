@@ -7,7 +7,7 @@ import {
   SubmitButton,
   TextField,
 } from "@/components/client/form";
-import { createClassRoomAction, createLevelAction } from "../actions";
+import { createClassRoomAction, createLevelAction, createTrackAction } from "../actions";
 
 /** Creation d'un niveau de cursus. */
 export function LevelForm({ nextOrder }: { nextOrder: number }) {
@@ -19,6 +19,46 @@ export function LevelForm({ nextOrder }: { nextOrder: number }) {
       </FormGrid>
       <TextField name="name" label="Libelle" required placeholder="Sixieme" />
       <SubmitButton className="btn-primary btn-sm w-full">Creer le niveau</SubmitButton>
+    </ActionForm>
+  );
+}
+
+/**
+ * Creation d'une filiere : serie au lycee (A, C, D), parcours a l'universite.
+ * Le nombre de credits requis ne concerne que l'enseignement superieur.
+ */
+export function TrackForm({
+  nextOrder,
+  isHigherEducation,
+}: {
+  nextOrder: number;
+  isHigherEducation: boolean;
+}) {
+  return (
+    <ActionForm action={createTrackAction} className="space-y-3" resetOnSuccess>
+      <FormGrid cols={2}>
+        <TextField name="code" label="Code" required placeholder={isHigherEducation ? "LIC-INFO" : "SERIE-D"} />
+        <TextField name="sortOrder" label="Ordre" type="number" min={0} defaultValue={nextOrder} />
+      </FormGrid>
+
+      <TextField
+        name="name"
+        label="Libelle"
+        required
+        placeholder={isHigherEducation ? "Licence Informatique" : "Serie D - Sciences"}
+      />
+
+      {isHigherEducation && (
+        <TextField
+          name="requiredCredits"
+          label="Credits requis pour la diplomation"
+          type="number"
+          min={0}
+          hint="Laissez vide si la filiere ne fonctionne pas en credits."
+        />
+      )}
+
+      <SubmitButton className="btn-primary btn-sm w-full">Creer la filiere</SubmitButton>
     </ActionForm>
   );
 }

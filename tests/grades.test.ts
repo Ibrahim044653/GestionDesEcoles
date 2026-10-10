@@ -6,6 +6,7 @@ import {
   computeGeneralAverage,
   computeRanking,
   computeSubjectAverage,
+  computeSubjectAverageWithResit,
   formatScore,
   normalizeToScale,
   parseGradingSettings,
@@ -313,5 +314,106 @@ describe("suggestAppreciation", () => {
 
   it("gere l'absence de note", () => {
     expect(suggestAppreciation(null)).toContain("Pas de note");
+  });
+});
+
+describe("computeSubjectAverageWithResit", () => {
+  const normale = [grade({ scoreCenti: 800 })]; // 8,00
+  const rattrapage = [grade({ scoreCenti: 1400 })]; // 14,00
+
+  it("sans note de rattrapage, retourne la session normale inchangee", () => {
+    const result = computeSubjectAverageWithResit(normale, [], DEFAULT_GRADING_SETTINGS);
+    expect(result.averageCenti).toBe(800);
+    expect(result.resitApplied).toBe(false);
+    expect(result.resitAverageCenti).toBeNull();
+  });
+
+  it("substitue le rattrapage quand il est meilleur", () => {
+    const result = computeSubjectAverageWithResit(normale, rattrapage, DEFAULT_GRADING_SETTINGS);
+    expect(result.averageCenti).toBe(1400);
+    expect(result.resitApplied).toBe(true);
+    // Les deux sessions restent lisibles.
+    expect(result.sessionAverageCenti).toBe(800);
+    expect(result.resitAverageCenti).toBe(1400);
+  });
+
+  it("ne degrade jamais la note en regle MEILLEURE", () => {
+    const result = computeSubjectAverageWithResit(
+      [grade({ scoreCenti: 1600 })],
+      [grade({ scoreCenti: 900 })],
+      DEFAULT_GRADING_SETTINGS,
+    );
+    expect(result.averageCenti).toBe(1600);
+    expect(result.resitApplied).toBe(false);
+    // La note de rattrapage reste consultable meme si elle est ecartee.
+    expect(result.resitAverageCenti).toBe(900);
+  });
+
+  it("remplace meme a la baisse en regle REMPLACE", () => {
+    const result = computeSubjectAverageWithResit(
+      [grade({ scoreCenti: 1600 })],
+      [grade({ scoreCenti: 900 })],
+      { ...DEFAULT_GRADING_SETTINGS, resitRule: "REMPLACE" },
+    );
+    expect(result.averageCenti).toBe(900);
+    expect(result.resitApplied).toBe(true);
+  });
+
+  it("ignore completement le rattrapage en regle IGNORER", () => {
+    const result = computeSubjectAverageWithResit(normale, rattrapage, {
+      ...DEFAULT_GRADING_SETTINGS,
+      resitRule: "IGNORER",
+    });
+    expect(result.averageCenti).toBe(800);
+    expect(result.resitApplied).toBe(false);
+    expect(result.resitAverageCenti).toBeNull();
+  });
+
+  it("n'efface pas la session normale si le rattrapage n'est pas note", () => {
+    const result = computeSubjectAverageWithResit(
+      normale,
+      [grade({ scoreCenti: null })],
+      DEFAULT_GRADING_SETTINGS,
+    );
+    expect(result.averageCenti).toBe(800);
+    expect(result.resitApplied).toBe(false);
+  });
+
+  it("n'efface pas la session normale si l'eleve est absent au rattrapage", () => {
+    const result = computeSubjectAverageWithResit(
+      normale,
+      [grade({ scoreCenti: null, isAbsent: true })],
+      DEFAULT_GRADING_SETTINGS,
+    );
+    expect(result.averageCenti).toBe(800);
+    expect(result.resitApplied).toBe(false);
+  });
+
+  it("plafonne la note de rattrapage quand l'etablissement le prevoit", () => {
+    const result = computeSubjectAverageWithResit(normale, rattrapage, {
+      ...DEFAULT_GRADING_SETTINGS,
+      resitCapCenti: 1000,
+    });
+    expect(result.averageCenti).toBe(1000);
+    expect(result.resitCapped).toBe(true);
+    // La note reellement obtenue reste tracee.
+    expect(result.resitAverageCenti).toBe(1400);
+  });
+
+  it("le plafond ne ramene jamais sous la session normale", () => {
+    // Normale 12,00, rattrapage 14,00, plafond 10,00 : l'eleve garde 12,00.
+    const result = computeSubjectAverageWithResit(
+      [grade({ scoreCenti: 1200 })],
+      rattrapage,
+      { ...DEFAULT_GRADING_SETTINGS, resitCapCenti: 1000, resitRule: "MEILLEURE" },
+    );
+    expect(result.averageCenti).toBe(1200);
+  });
+
+  it("s'applique aussi quand la session normale est vide (eleve non note)", () => {
+    const result = computeSubjectAverageWithResit([], rattrapage, DEFAULT_GRADING_SETTINGS);
+    expect(result.averageCenti).toBe(1400);
+    expect(result.resitApplied).toBe(true);
+    expect(result.sessionAverageCenti).toBeNull();
   });
 });

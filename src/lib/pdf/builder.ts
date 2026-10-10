@@ -215,6 +215,26 @@ export function drawField(
   context.y -= size + 6;
 }
 
+/**
+ * Tronque un texte pour qu'il tienne dans `maxWidth`, avec des points de
+ * suspension. Sans cela, une appreciation un peu longue deborderait sur la
+ * colonne voisine, voire hors de la page.
+ */
+export function ellipsize(font: PDFFont, text: string, size: number, maxWidth: number): string {
+  const content = sanitizeText(text);
+  if (maxWidth <= 0 || font.widthOfTextAtSize(content, size) <= maxWidth) return content;
+
+  const suffix = "...";
+  const room = maxWidth - font.widthOfTextAtSize(suffix, size);
+  if (room <= 0) return "";
+
+  let kept = content;
+  while (kept.length > 0 && font.widthOfTextAtSize(kept, size) > room) {
+    kept = kept.slice(0, -1);
+  }
+  return kept.trimEnd() + suffix;
+}
+
 export type TableColumn = {
   header: string;
   width: number;
@@ -268,7 +288,7 @@ export function drawTable(
     row.forEach((cell, index) => {
       const column = columns[index];
       if (!column) return;
-      drawText(context, cell, {
+      drawText(context, ellipsize(context.font, cell, size, column.width - 12), {
         x: column.align === "right" ? x + column.width - 12 : x,
         size,
         align: column.align === "right" ? "right" : "left",
@@ -330,6 +350,46 @@ export function finalize(context: PdfContext, footerNote: string): void {
       color: COLORS.muted,
     });
   });
+}
+
+/**
+ * Incruste une image dans le PDF.
+ *
+ * Tolerante par conception : si le fichier est absent, illisible ou dans un
+ * format non supporte, la fonction renvoie `false` et l'appelant retombe sur
+ * un emplacement reserve. Un logo manquant ne doit jamais empecher l'emission
+ * d'un recu ou d'un bulletin.
+ */
+export async function drawImage(
+  context: PdfContext,
+  bytes: Buffer,
+  mimeType: string,
+  box: { x: number; y: number; width: number; height: number },
+): Promise<boolean> {
+  try {
+    const image = mimeType === "image/png"
+      ? await context.doc.embedPng(bytes)
+      : mimeType === "image/jpeg"
+        ? await context.doc.embedJpg(bytes)
+        : null;
+
+    if (!image) return false;
+
+    // Conserve les proportions et centre l'image dans l'emplacement prevu.
+    const ratio = Math.min(box.width / image.width, box.height / image.height);
+    const width = image.width * ratio;
+    const height = image.height * ratio;
+
+    context.page.drawImage(image, {
+      x: box.x + (box.width - width) / 2,
+      y: box.y + (box.height - height) / 2,
+      width,
+      height,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function toBuffer(context: PdfContext): Promise<Buffer> {

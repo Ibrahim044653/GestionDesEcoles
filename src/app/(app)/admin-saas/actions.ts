@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/auth/guard";
 import { fail, ok, NotFoundError, ValidationError, type ActionResult } from "@/lib/errors";
 import { recordAudit, AUDIT_ACTIONS } from "@/lib/audit";
+import { notifyUsers } from "@/lib/domain/notifications";
 
 /**
  * Administration des abonnements.
@@ -76,6 +77,93 @@ export async function updateSubscriptionStatusAction(
           ? "Abonnement resilie. Proposez un export complet des donnees avant toute suppression."
           : "Abonnement mis a jour.",
     );
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Reponse a un ticket d'assistance.
+ *
+ * La reponse est ajoutee a la resolution du ticket et notifiee a l'auteur. Un
+ * ticket resolu ou clos reste consultable : on ne supprime pas l'historique
+ * d'une demande d'assistance, c'est la seule trace qu'a le client.
+ */
+export async function replySupportTicketAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<{ status: string }>> {
+  try {
+    const context = await requireSuperAdmin();
+
+    const ticketId = String(formData.get("ticketId") ?? "");
+    const status = String(formData.get("status") ?? "PENDING");
+    const reply = String(formData.get("reply") ?? "").trim().slice(0, 4000);
+
+    if (!["OPEN", "PENDING", "RESOLVED", "CLOSED"].includes(status)) {
+      throw new ValidationError(`Statut de ticket inconnu : ${status}.`);
+    }
+
+    if (!reply) {
+      throw new ValidationError("La reponse est vide.", {
+        reply: ["Une reponse est obligatoire."],
+      });
+    }
+
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        schoolId: true,
+        openedById: true,
+        subject: true,
+        resolution: true,
+        status: true,
+      },
+    });
+
+    if (!ticket) throw new NotFoundError("Ticket introuvable.");
+
+    const stamp = new Date().toLocaleString("fr-FR");
+    const resolution = [
+      ticket.resolution,
+      `--- Reponse du ${stamp} ---\n${reply}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n")
+      .slice(0, 8000);
+
+    await prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: {
+        status,
+        resolution,
+        closedAt: status === "CLOSED" || status === "RESOLVED" ? new Date() : null,
+      },
+    });
+
+    if (ticket.openedById) {
+      await notifyUsers({
+        schoolId: ticket.schoolId,
+        userIds: [ticket.openedById],
+        kind: "AUTRE",
+        title: `Assistance : ${ticket.subject}`,
+        body: reply.slice(0, 300),
+        link: "/mon-compte",
+      });
+    }
+
+    await recordAudit({
+      action: "support_ticket.replied",
+      schoolId: ticket.schoolId,
+      userId: context.user.id,
+      entityType: "supportTicket",
+      entityId: ticketId,
+      metadata: { statut: status, objet: ticket.subject },
+    });
+
+    revalidatePath("/admin-saas");
+    return ok({ status }, "Reponse enregistree et transmise au demandeur.");
   } catch (error) {
     return fail(error);
   }

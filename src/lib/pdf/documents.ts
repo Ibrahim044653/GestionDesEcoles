@@ -3,17 +3,20 @@ import { rgb } from "pdf-lib";
 import { prisma } from "@/lib/prisma";
 import { NotFoundError } from "@/lib/errors";
 import { formatMoney } from "@/lib/money";
-import { formatScore } from "@/lib/domain/grades";
+import { formatScore, parseGradingSettings } from "@/lib/domain/grades";
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants";
 import { loadStudentAccount } from "@/lib/domain/student-account";
+import { readStoredFile } from "@/lib/storage";
 import {
   A4,
   COLORS,
   createDocument,
+  drawImage,
   drawField,
   drawHorizontalRule,
   drawParagraph,
   drawSchoolHeader,
+  ensureSpace,
   drawTable,
   drawText,
   finalize,
@@ -196,6 +199,8 @@ export async function generateReportCardPdf(
     coefficient: number;
     averageCenti: number | null;
     appreciation?: string;
+    resitApplied?: boolean;
+    sessionAverageCenti?: number | null;
   }[];
 
   const context = await createDocument();
@@ -231,12 +236,32 @@ export async function generateReportCardPdf(
       { header: "Appreciation", width: 169 },
     ],
     detail.map((line) => [
-      line.subjectName,
+      line.resitApplied ? `${line.subjectName} (*)` : line.subjectName,
       String(line.coefficient),
       formatScore(line.averageCenti, school.locale),
       line.appreciation ?? "",
     ]),
   );
+
+  // Le rattrapage est signale explicitement : la famille doit pouvoir
+  // distinguer une moyenne de premiere session d'une moyenne de rattrapage.
+  const resitLines = detail.filter((line) => line.resitApplied);
+  if (resitLines.length > 0) {
+    context.y -= 4;
+    drawParagraph(
+      context,
+      `(*) Moyenne issue de la session de rattrapage : ${resitLines
+        .map(
+          (line) =>
+            `${line.subjectName} (session normale ${formatScore(
+              line.sessionAverageCenti ?? null,
+              school.locale,
+            )})`,
+        )
+        .join(", ")}.`,
+      { size: 8, color: COLORS.muted },
+    );
+  }
 
   context.y -= 14;
   context.page.drawRectangle({
@@ -607,16 +632,35 @@ export async function generateStudentCardPdf(schoolId: string, studentId: string
     color: rgb(1, 1, 1),
   });
 
-  // Emplacement reserve a la photographie de l'eleve.
+  // Photographie de l'eleve, ou emplacement reserve si elle est absente.
+  const photoBox = { x: cardX + 16, y: cardY + 32, width: 90, height: 115 };
   context.page.drawRectangle({
-    x: cardX + 16,
-    y: cardY + 32,
-    width: 90,
-    height: 115,
+    ...photoBox,
     borderColor: COLORS.line,
     borderWidth: 1,
   });
-  drawText(context, "PHOTO", { x: cardX + 44, y: cardY + 86, size: 8, color: COLORS.muted });
+
+  let photoDessinee = false;
+  if (student.photoDocumentId) {
+    const photo = await prisma.document.findUnique({
+      where: { id: student.photoDocumentId },
+      select: { storageKey: true, mimeType: true, schoolId: true, deletedAt: true },
+    });
+
+    // Verification de tenant jusque dans la generation du document.
+    if (photo && !photo.deletedAt && photo.schoolId === schoolId) {
+      try {
+        const bytes = await readStoredFile(photo.storageKey);
+        photoDessinee = await drawImage(context, bytes, photo.mimeType, photoBox);
+      } catch {
+        photoDessinee = false;
+      }
+    }
+  }
+
+  if (!photoDessinee) {
+    drawText(context, "PHOTO", { x: cardX + 44, y: cardY + 86, size: 8, color: COLORS.muted });
+  }
 
   let fieldY = cardY + 128;
   const field = (label: string, value: string) => {
@@ -644,5 +688,200 @@ export async function generateStudentCardPdf(schoolId: string, studentId: string
   );
 
   finalize(context, `${school.name} - Carte scolaire ${student.matricule}.`);
+  return toBuffer(context);
+}
+
+const COUNCIL_DECISION_LABELS: Record<string, string> = {
+  EN_ATTENTE: "En attente",
+  ADMIS: "Admis",
+  REDOUBLE: "Redouble",
+  EXCLU: "Exclu",
+  ORIENTE: "Oriente",
+};
+
+/**
+ * Proces-verbal de deliberation du conseil de classe.
+ *
+ * Le document est une TRANSCRIPTION : il reprend les moyennes figees dans les
+ * bulletins deja generes et les decisions reellement enregistrees. Il ne
+ * recalcule rien et ne decide rien. Un eleve sans bulletin ou sans decision
+ * apparait comme tel, plutot que d'etre masque : un PV incomplet doit se voir.
+ */
+export async function generateCouncilMinutesPdf(
+  schoolId: string,
+  classRoomId: string,
+  gradingPeriodId: string,
+): Promise<Buffer> {
+  const [classRoom, period] = await Promise.all([
+    prisma.classRoom.findUnique({
+      where: { id: classRoomId },
+      include: {
+        school: true,
+        academicYear: true,
+        level: true,
+        track: true,
+        mainTeacher: { select: { firstName: true, lastName: true } },
+      },
+    }),
+    prisma.gradingPeriod.findUnique({
+      where: { id: gradingPeriodId },
+      select: { id: true, schoolId: true, academicYearId: true, name: true, status: true },
+    }),
+  ]);
+
+  if (!classRoom || classRoom.schoolId !== schoolId) throw new NotFoundError("Classe introuvable.");
+  if (!period || period.schoolId !== schoolId) throw new NotFoundError("Periode introuvable.");
+  if (period.academicYearId !== classRoom.academicYearId) {
+    throw new NotFoundError("Cette periode n'appartient pas a l'annee de la classe.");
+  }
+
+  const school = classRoom.school;
+  const settings = parseGradingSettings(school.gradingSettings);
+
+  const enrollments = await prisma.enrollment.findMany({
+    where: { classRoomId, academicYearId: classRoom.academicYearId, status: "ACTIVE" },
+    orderBy: { student: { lastName: "asc" } },
+    include: {
+      student: {
+        select: {
+          matricule: true,
+          firstName: true,
+          lastName: true,
+          reportCards: {
+            where: { gradingPeriodId },
+            select: { averageCenti: true, rank: true, classSize: true, appreciation: true },
+          },
+        },
+      },
+    },
+  });
+
+  const rows = enrollments.map((enrollment) => {
+    const card = enrollment.student.reportCards[0];
+    return {
+      matricule: enrollment.student.matricule,
+      name: `${enrollment.student.lastName} ${enrollment.student.firstName}`,
+      averageCenti: card?.averageCenti ?? null,
+      rank: card?.rank ?? null,
+      classSize: card?.classSize ?? null,
+      appreciation: card?.appreciation ?? "",
+      decision: enrollment.decision,
+      decisionNote: enrollment.decisionNote,
+    };
+  });
+
+  const context = await createDocument();
+
+  drawSchoolHeader(
+    context,
+    { name: school.name, address: school.address, city: school.city },
+    "Proces-verbal de deliberation",
+    `${classRoom.name} - ${period.name} - ${classRoom.academicYear.name}`,
+  );
+
+  drawField(context, "Classe", `${classRoom.name} (${classRoom.level.name})`);
+  if (classRoom.track) drawField(context, "Filiere", classRoom.track.name);
+  drawField(context, "Periode", period.name);
+  drawField(
+    context,
+    "Professeur principal",
+    classRoom.mainTeacher
+      ? `${classRoom.mainTeacher.firstName} ${classRoom.mainTeacher.lastName}`
+      : "Non designe",
+  );
+  drawField(context, "Effectif delibere", String(rows.length));
+  drawField(
+    context,
+    "Moyenne de passage",
+    formatScore(settings.passMarkCenti, school.locale),
+  );
+
+  context.y -= 6;
+  drawHorizontalRule(context);
+
+  drawTable(
+    context,
+    [
+      { header: "N°", width: 28 },
+      { header: "Matricule", width: 88 },
+      { header: "Nom et prenoms", width: 165 },
+      { header: "Moyenne", width: 60, align: "right" },
+      { header: "Rang", width: 48, align: "right" },
+      { header: "Decision", width: 110 },
+    ],
+    rows.map((row, index) => [
+      String(index + 1),
+      row.matricule,
+      row.name,
+      row.averageCenti === null ? "Sans bulletin" : formatScore(row.averageCenti, school.locale),
+      row.rank ? `${row.rank}/${row.classSize ?? "-"}` : "—",
+      COUNCIL_DECISION_LABELS[row.decision] ?? row.decision,
+    ]),
+    { rowHeight: 19 },
+  );
+
+  context.y -= 10;
+
+  // Synthese : comptage par decision, calcule sur ce qui est reellement
+  // enregistre. Le total des lignes ci-dessus doit retomber sur l'effectif.
+  const counts = new Map<string, number>();
+  for (const row of rows) counts.set(row.decision, (counts.get(row.decision) ?? 0) + 1);
+
+  const withoutCard = rows.filter((row) => row.averageCenti === null).length;
+  const pending = counts.get("EN_ATTENTE") ?? 0;
+
+  ensureSpace(context, 120);
+  drawText(context, "SYNTHESE", { size: 11, bold: true, color: COLORS.brand });
+  context.y -= 18;
+
+  for (const [code, label] of Object.entries(COUNCIL_DECISION_LABELS)) {
+    const count = counts.get(code) ?? 0;
+    if (count === 0 && code === "EN_ATTENTE") continue;
+    const share = rows.length > 0 ? Math.round((count * 1000) / rows.length) / 10 : 0;
+    drawField(context, label, `${count} eleve(s)  (${share.toFixed(1)} %)`, { labelWidth: 140 });
+  }
+
+  if (withoutCard > 0 || pending > 0) {
+    context.y -= 6;
+    drawParagraph(
+      context,
+      `Reserve : ${withoutCard} eleve(s) sans bulletin pour cette periode et ${pending} eleve(s) sans decision enregistree. Ce proces-verbal est donc provisoire.`,
+      { size: 9, color: COLORS.danger },
+    );
+  }
+
+  // Appreciations saisies par le conseil, reprises telles quelles.
+  const withAppreciation = rows.filter((row) => row.appreciation || row.decisionNote);
+  if (withAppreciation.length > 0) {
+    context.y -= 8;
+    ensureSpace(context, 60);
+    drawText(context, "OBSERVATIONS DU CONSEIL", { size: 11, bold: true, color: COLORS.brand });
+    context.y -= 18;
+
+    for (const row of withAppreciation) {
+      ensureSpace(context, 34);
+      drawText(context, row.name, { size: 9, bold: true });
+      context.y -= 13;
+      const note = [row.appreciation, row.decisionNote].filter(Boolean).join(" - ");
+      drawParagraph(context, note, { size: 9, color: COLORS.muted });
+      context.y -= 4;
+    }
+  }
+
+  context.y -= 16;
+  ensureSpace(context, 80);
+  drawHorizontalRule(context);
+  drawText(context, "Le professeur principal", { size: 9, color: COLORS.muted });
+  drawText(context, "Le chef d'etablissement", {
+    x: A4.width - context.margin,
+    size: 9,
+    align: "right",
+    color: COLORS.muted,
+  });
+
+  finalize(
+    context,
+    `${school.name} - PV de deliberation ${classRoom.name} / ${period.name}. Document interne a signer.`,
+  );
   return toBuffer(context);
 }

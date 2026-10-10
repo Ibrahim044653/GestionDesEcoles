@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePagePermission } from "@/lib/auth/guard";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
@@ -139,6 +140,12 @@ export default async function UsersPage() {
                         )}
                       </td>
                       <td className="whitespace-nowrap text-right">
+                        <Link
+                          href={`/parametres/utilisateurs/${membership.id}`}
+                          className="btn-ghost btn-sm"
+                        >
+                          Permissions
+                        </Link>
                         {!isSelf && (
                           <>
                             <ResetPasswordButton userId={membership.user.id} />

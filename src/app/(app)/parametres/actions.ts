@@ -11,7 +11,8 @@ import {
   classRoomSchema,
   subjectSchema,
 } from "@/lib/validation";
-import { fail, ok, ConflictError, type ActionResult } from "@/lib/errors";
+import { fail, ok, ConflictError, ValidationError, type ActionResult } from "@/lib/errors";
+import { parseAmountToMinor, currencyDecimals } from "@/lib/money";
 import { translateUniqueViolation } from "@/lib/domain/sequences";
 import { recordAudit, AUDIT_ACTIONS } from "@/lib/audit";
 import { OPTIONAL_MODULES } from "@/lib/constants";
@@ -72,12 +73,25 @@ export async function updateGradingSettingsAction(
     const maxScore = Number.parseInt(String(formData.get("maxScore") ?? "20"), 10) || 20;
     const passMark = Number.parseFloat(String(formData.get("passMark") ?? "10").replace(",", "."));
 
+    const resitRuleRaw = String(formData.get("resitRule") ?? "MEILLEURE");
+    const resitRule = ["IGNORER", "MEILLEURE", "REMPLACE"].includes(resitRuleRaw)
+      ? resitRuleRaw
+      : "MEILLEURE";
+
+    // Un plafond vide signifie « pas de plafond » : il ne doit pas devenir 0,
+    // ce qui annulerait toutes les notes de rattrapage.
+    const resitCapRaw = String(formData.get("resitCap") ?? "").trim();
+    const resitCap = resitCapRaw ? Number.parseFloat(resitCapRaw.replace(",", ".")) : null;
+
     const settings = {
       maxScore,
       absenceRule: formData.get("absenceRule") === "ZERO" ? "ZERO" : "EXCLURE",
       excusedAlwaysExcluded: formData.get("excusedAlwaysExcluded") === "on",
       rankingEnabled: formData.get("rankingEnabled") === "on",
       passMarkCenti: Math.round((Number.isFinite(passMark) ? passMark : 10) * 100),
+      resitRule,
+      resitCapCenti:
+        resitCap !== null && Number.isFinite(resitCap) ? Math.round(resitCap * 100) : null,
     };
 
     await prisma.school.update({
@@ -449,6 +463,215 @@ export async function createSupplierAction(
 
     revalidatePath("/parametres/comptabilite");
     return ok(undefined, "Fournisseur enregistre.");
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Creation d'une filiere (serie au lycee, parcours a l'universite).
+ * `requiredCredits` n'a de sens que dans l'enseignement superieur : il sert au
+ * suivi de la diplomation.
+ */
+export async function createTrackAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<undefined>> {
+  try {
+    const context = await requirePermission(PERMISSIONS.SCHOOL_CONFIGURE_ACADEMIC);
+
+    const code = String(formData.get("code") ?? "").trim().toUpperCase();
+    const name = String(formData.get("name") ?? "").trim();
+    const sortOrder = Number.parseInt(String(formData.get("sortOrder") ?? "0"), 10) || 0;
+    const rawCredits = String(formData.get("requiredCredits") ?? "").trim();
+
+    if (!code || !name) {
+      throw new ValidationError("Le code et le libelle sont obligatoires.", {
+        ...(code ? {} : { code: ["Le code est obligatoire."] }),
+        ...(name ? {} : { name: ["Le libelle est obligatoire."] }),
+      });
+    }
+
+    const requiredCredits = rawCredits === "" ? null : Number.parseInt(rawCredits, 10);
+    if (requiredCredits !== null && (!Number.isFinite(requiredCredits) || requiredCredits < 0)) {
+      throw new ValidationError("Nombre de credits invalide.", {
+        requiredCredits: ["Indiquez un nombre entier positif, ou laissez vide."],
+      });
+    }
+
+    await prisma.track
+      .create({ data: { schoolId: context.school.id, code, name, sortOrder, requiredCredits } })
+      .catch((error) => translateUniqueViolation(error, "Ce code de filiere existe deja."));
+
+    revalidatePath("/parametres/classes");
+    return ok(undefined, "Filiere creee.");
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Creation d'une unite d'enseignement (universite).
+ * Les matieres rattachees a une UE jouent le role d'elements constitutifs.
+ */
+export async function createTeachingUnitAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<undefined>> {
+  try {
+    const context = await requirePermission(PERMISSIONS.SUBJECT_MANAGE);
+
+    const code = String(formData.get("code") ?? "").trim().toUpperCase();
+    const name = String(formData.get("name") ?? "").trim();
+    const credits = Number.parseInt(String(formData.get("credits") ?? "0"), 10) || 0;
+    const semester = Number.parseInt(String(formData.get("semester") ?? "1"), 10) || 1;
+    const levelId = String(formData.get("levelId") ?? "") || null;
+    const trackId = String(formData.get("trackId") ?? "") || null;
+
+    if (!code || !name) {
+      throw new ValidationError("Le code et l'intitule sont obligatoires.");
+    }
+    if (credits < 0 || credits > 60) {
+      throw new ValidationError("Nombre de credits invalide.", {
+        credits: ["Indiquez une valeur entre 0 et 60."],
+      });
+    }
+    if (semester < 1 || semester > 12) {
+      throw new ValidationError("Semestre invalide.", {
+        semester: ["Indiquez un semestre entre 1 et 12."],
+      });
+    }
+
+    // Les references facultatives doivent appartenir a l'etablissement.
+    if (levelId) {
+      const level = await prisma.level.findUnique({
+        where: { id: levelId },
+        select: { id: true, schoolId: true },
+      });
+      await assertSameSchool(context, level, "level");
+    }
+    if (trackId) {
+      const track = await prisma.track.findUnique({
+        where: { id: trackId },
+        select: { id: true, schoolId: true },
+      });
+      await assertSameSchool(context, track, "track");
+    }
+
+    await prisma.teachingUnit
+      .create({
+        data: { schoolId: context.school.id, code, name, credits, semester, levelId, trackId },
+      })
+      .catch((error) =>
+        translateUniqueViolation(error, "Ce code d'unite d'enseignement existe deja."),
+      );
+
+    revalidatePath("/parametres/matieres");
+    return ok(undefined, "Unite d'enseignement creee.");
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Rattache (ou detache) une matiere a une unite d'enseignement. */
+export async function assignSubjectToUnitAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<undefined>> {
+  try {
+    const context = await requirePermission(PERMISSIONS.SUBJECT_MANAGE);
+    const subjectId = String(formData.get("subjectId") ?? "");
+    const teachingUnitId = String(formData.get("teachingUnitId") ?? "") || null;
+
+    const subject = await prisma.subject.findUnique({
+      where: { id: subjectId },
+      select: { id: true, schoolId: true },
+    });
+    await assertSameSchool(context, subject, "subject");
+
+    if (teachingUnitId) {
+      const unit = await prisma.teachingUnit.findUnique({
+        where: { id: teachingUnitId },
+        select: { id: true, schoolId: true },
+      });
+      await assertSameSchool(context, unit, "teachingUnit");
+    }
+
+    await prisma.subject.update({ where: { id: subjectId }, data: { teachingUnitId } });
+
+    revalidatePath("/parametres/matieres");
+    return ok(
+      undefined,
+      teachingUnitId ? "Matiere rattachee a l'unite d'enseignement." : "Matiere detachee.",
+    );
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Definit un budget previsionnel pour une categorie de depense.
+ * Rejouable : un budget existant pour le meme libelle est mis a jour.
+ */
+export async function setBudgetAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<undefined>> {
+  try {
+    const context = await requirePermission(PERMISSIONS.SCHOOL_CONFIGURE_FINANCE);
+
+    const academicYearId = String(formData.get("academicYearId") ?? "");
+    const label = String(formData.get("label") ?? "").trim();
+    const category = String(formData.get("category") ?? "").trim().toUpperCase();
+    const plannedMinor = parseAmountToMinor(
+      String(formData.get("planned") ?? ""),
+      currencyDecimals(context.school.currency),
+    );
+
+    if (!label) {
+      throw new ValidationError("Le libelle est obligatoire.", { label: ["Indiquez un libelle."] });
+    }
+    if (plannedMinor < 0) {
+      throw new ValidationError("Le montant budgete ne peut pas etre negatif.", {
+        planned: ["Indiquez un montant positif ou nul."],
+      });
+    }
+
+    const year = await prisma.academicYear.findUnique({
+      where: { id: academicYearId },
+      select: { id: true, schoolId: true },
+    });
+    await assertSameSchool(context, year, "academicYear");
+
+    // La categorie doit exister : sinon le rapprochement budget/realise serait vide.
+    const existingCategory = await prisma.expenseCategory.findFirst({
+      where: { schoolId: context.school.id, code: category },
+      select: { id: true },
+    });
+    if (!existingCategory) {
+      throw new ValidationError("Categorie de depense inconnue.", {
+        category: ["Choisissez une categorie existante."],
+      });
+    }
+
+    await prisma.budget.upsert({
+      where: {
+        schoolId_academicYearId_label: { schoolId: context.school.id, academicYearId, label },
+      },
+      create: {
+        schoolId: context.school.id,
+        academicYearId,
+        label,
+        category,
+        plannedMinor,
+        currency: context.school.currency,
+      },
+      update: { category, plannedMinor },
+    });
+
+    revalidatePath("/parametres/comptabilite");
+    revalidatePath("/rapports");
+    return ok(undefined, "Budget enregistre.");
   } catch (error) {
     return fail(error);
   }

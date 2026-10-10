@@ -6,7 +6,7 @@ npm run test:watch    # en continu
 npx vitest run tests/payments.integration.test.ts
 ```
 
-**216 tests, 7 fichiers.** Les tests d'integration creent une base SQLite
+**275 tests, 10 fichiers.** Les tests d'integration creent une base SQLite
 jetable (`prisma/test-integration.db`), creee et supprimee automatiquement. La
 base de developpement n'est **jamais** touchee : `tests/global-setup.ts`
 positionne `DATABASE_URL` avant le chargement du moindre module applicatif.
@@ -26,7 +26,7 @@ L'exigence « aucun flottant binaire » (section 20).
 - Analyse des saisies : `12,50` / `12.50` / `300 000`, rejet des decimales
   incompatibles avec la devise (XOF n'en accepte aucune)
 
-### `grades.test.ts` — 38 tests
+### `grades.test.ts` — 47 tests
 Moyennes et absences (section 6).
 
 - Ponderation par coefficient d'evaluation puis de matiere
@@ -57,7 +57,7 @@ Partie double et echeanciers (sections 8 et 10).
 - Tous les comptes utilises par le code existent au plan par defaut
 - Echeanciers : la somme des tranches egale **exactement** le montant du frais
 
-### `student-account.test.ts` — 19 tests
+### `student-account.test.ts` — 20 tests
 Le coeur financier (sections 8 et 9).
 
 - Remises plafonnees au montant brut : **jamais de dette negative**
@@ -98,6 +98,39 @@ Pedagogie et imports (sections 3 et 6).
 - Fratrie rattachee au **meme** responsable
 - Inscription et frais appliques automatiquement quand la classe est fournie
 
+### `finance-settings.test.ts` — 21 tests
+Penalites de retard et remise fratrie (sections 9 et 10). Module pur.
+
+- Rien n'est actif par defaut : une penalite ne peut pas apparaitre par herite
+- Penalite calculee sur le **reste du**, jamais sur le montant initial
+- Une echeance soldee ne genere aucune penalite, meme payee en retard
+- Jours de tolerance respectes
+- Plafond applique, **sans jamais ramener l'eleve sous sa situation anterieure**
+- Paliers fratrie : seul le palier le plus eleve atteint s'applique
+- Reglages corrompus ou negatifs ramenes a des valeurs sures ; un plafond
+  **absent** reste distinct d'un plafond **a zero**
+
+### `messaging.integration.test.ts` — 11 tests
+Messagerie interne (section 13).
+
+- Un fil n'est lisible **que par ses participants** : meme un directeur du meme
+  etablissement n'y accede pas s'il n'y figure pas
+- Aucun acces depuis un autre etablissement, ni en lecture ni en reponse
+- L'auteur est toujours inscrit au fil qu'il ouvre
+- Un destinataire hors de l'etablissement est refuse
+- Non-lus : poses pour les destinataires, jamais pour celui qui vient d'ecrire
+
+### `library.integration.test.ts` — 17 tests
+Module bibliotheque (section 14).
+
+- **La disponibilite est calculee**, pas stockee : elle reste exacte apres pret,
+  retour, perte et reduction du fonds, et ne descend jamais sous zero
+- Pret refuse sans exemplaire disponible, et refuse en double au meme emprunteur
+- Exactement un emprunteur : ni zero, ni deux
+- Ouvrage et emprunteur d'un autre etablissement refuses
+- Un pret clos ne se cloture pas deux fois ; une perte reste a l'historique
+- Retard compte en jours entiers : un retour prevu aujourd'hui n'est pas en retard
+
 ---
 
 ## Deux bugs reels trouves par ces tests
@@ -122,7 +155,7 @@ par une verification d'aller-retour sur les composants.
 
 | Element | Raison | Compensation |
 |---|---|---|
-| Parcours navigateur (clics, formulaires) | Aucun outil de test navigateur disponible dans l'environnement | Parcours de fumee manuel : **35 pages × 8 roles**, 0 erreur serveur |
+| Parcours navigateur (clics, formulaires) | Aucun outil de test navigateur disponible dans l'environnement | Parcours de fumee scripte sur le build de production : **43 pages × 8 roles = 344 requetes**, 0 erreur serveur |
 | Server Actions via HTTP | Le protocole RSC n'est pas pilotable simplement en ligne de commande | La logique metier qu'elles appellent est testee directement |
 | Rendu visuel des PDF | Pas de comparaison d'images | Les 6 types de documents ont ete generes et ouverts manuellement |
 | Montee en charge | Hors perimetre | Index declares au schema |
