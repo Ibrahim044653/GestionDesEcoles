@@ -1,0 +1,52 @@
+{
+  "name": "gestion-ecole",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plateforme SaaS multi-etablissements de gestion scolaire (prescolaire -> universite)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "setup": "prisma generate && prisma db push && tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.1.0",
+    "next": "^15.5.27",
+    "pdf-lib": "^1.17.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "prisma": "^6.1.0",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.21.5": true,
+    "sharp@0.34.5": true
+  }
+}
