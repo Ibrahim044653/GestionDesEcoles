@@ -19,7 +19,7 @@ import {
   UsersIcon,
   ShieldIcon,
 } from "@/components/ui";
-import { SubscriptionStatusForm, TicketReplyForm } from "./saas-forms";
+import { NewClientForm, SubscriptionStatusForm, TicketReplyForm } from "./saas-forms";
 
 export const metadata: Metadata = { title: "Administration SaaS" };
 
@@ -101,6 +101,16 @@ export default async function SaasAdminPage() {
       <PageHeader
         title="Administration de la plateforme"
         description="Organisations clientes, abonnements, facturation SaaS et assistance."
+        actions={
+          <NewClientForm
+            plans={plans
+              .filter((plan) => plan.isActive)
+              .map((plan) => ({
+                id: plan.id,
+                label: `${plan.name} — ${plan.maxSchools} etab., ${plan.maxStudents} eleves`,
+              }))}
+          />
+        }
       />
 
       <div className="mb-5">

@@ -12,7 +12,8 @@ C'est le rôle le plus **limité** en données scolaires de toute l'application.
 
 | Vous pouvez | Vous ne pouvez pas |
 |---|---|
-| Voir les organisations et leurs établissements | **Ouvrir le dossier d'un élève** |
+| **Créer un client** : organisation, école, compte propriétaire, abonnement | **Ouvrir le dossier d'un élève** |
+| Voir les organisations et leurs établissements | |
 | Gérer les abonnements et les formules | **Voir les notes ou les bulletins** |
 | Suivre la facturation de la plateforme | **Voir les encaissements d'une école** |
 | Répondre aux tickets d'assistance | **Encaisser, noter, inscrire** |
@@ -41,6 +42,54 @@ C'est le rôle le plus **limité** en données scolaires de toute l'application.
 | **Factures** | Facturation de la plateforme |
 | **Tickets d'assistance** | Demandes des clients |
 | **Formules** | Offres et leurs limites |
+
+---
+
+## 2 bis. Créer un client
+
+**Administration SaaS → Nouveau client** (bouton en haut à droite)
+
+Une seule opération crée l'ensemble : l'**organisation**, son **premier
+établissement**, le **compte propriétaire** et l'**abonnement**.
+
+| Section | Ce qu'il faut |
+|---|---|
+| **Le client** | Nom de l'entité qui souscrit, pays |
+| **Premier établissement** | Nom, type, ville, contacts |
+| **Compte propriétaire** | Nom, prénom, e-mail, téléphone |
+| **Abonnement** | Formule, et nombre de jours d'essai (0 pour un abonnement actif immédiatement) |
+
+### Trois choses à savoir
+
+**Le mot de passe provisoire s'affiche une seule fois.** Notez-le avant de
+quitter l'écran et transmettez-le par un canal distinct de l'e-mail
+d'identifiant. Si vous le perdez, il faut le réinitialiser.
+
+**Un compte existant est réutilisé, jamais écrasé.** Si l'adresse du
+propriétaire correspond à un compte déjà présent — la même personne détient
+plusieurs groupes scolaires — il est simplement rattaché au nouveau client.
+**Son mot de passe actuel reste valable**, et aucun provisoire n'est affiché.
+Il basculera entre ses clients par le sélecteur du haut.
+
+**L'établissement est créé avec son plan comptable SYSCOHADA**, donc prêt à
+encaisser. L'année scolaire, les classes, les matières et les frais restent à
+la charge du propriétaire : ces choix engagent sa pédagogie et sa
+tarification.
+
+### Exemple
+
+> **Le collège Les Palmiers, à Bouaké, souscrit la formule Essentiel.**
+
+1. **Nouveau client**.
+2. Client : `Collège Les Palmiers`, pays `CI`.
+3. Établissement : `Collège Les Palmiers`, type `Collège`, ville `Bouaké`.
+4. Propriétaire : `Adama`, `OUATTARA`, `a.ouattara@palmiers.ci`.
+5. Abonnement : `Essentiel`, `30` jours d'essai.
+6. Vous validez. Le message affiche le mot de passe provisoire —
+   **vous le notez**.
+7. Vous appelez M. OUATTARA, lui donnez son identifiant par e-mail et le mot
+   de passe par téléphone. Il se connecte, en choisit un nouveau, et configure
+   son année scolaire.
 
 ---
 

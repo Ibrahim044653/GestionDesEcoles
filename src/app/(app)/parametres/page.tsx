@@ -6,7 +6,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { SCHOOL_TYPE_LABELS, OPTIONAL_MODULE_LABELS, type SchoolType } from "@/lib/constants";
 import { listIntegrations } from "@/lib/integrations";
 import { Alert, Badge, Card, PageHeader, SettingsIcon } from "@/components/ui";
-import { SchoolSettingsForm } from "./school-form";
+import { NewSchoolForm, SchoolSettingsForm } from "./school-form";
 import { ImageUpload } from "@/components/client/upload";
 import { uploadSchoolLogoAction } from "@/app/(app)/fichiers/actions";
 
@@ -65,6 +65,9 @@ export default async function SettingsPage() {
       <PageHeader
         title="Parametres de l'etablissement"
         description={`${school.organization.name} — ${SCHOOL_TYPE_LABELS[school.type as SchoolType] ?? school.type}`}
+        actions={
+          hasPermission(context, PERMISSIONS.SCHOOL_CREATE) ? <NewSchoolForm /> : undefined
+        }
       />
 
       <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-4">

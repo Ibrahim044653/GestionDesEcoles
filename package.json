@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
     "vercel-build": "node scripts/use-datasource.mjs postgresql && prisma generate && next build",
+    "guides:pdf": "node scripts/guides-en-pdf.mjs",
     "db:seed:prod": "node scripts/use-datasource.mjs postgresql && prisma generate && tsx prisma/seed.ts"
   },
   "prisma": {
@@ -38,6 +39,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "marked": "^18.1.0",
     "prisma": "^6.1.0",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.2",

@@ -3,11 +3,18 @@
 import { useState } from "react";
 import {
   ActionForm,
+  FormActions,
+  FormGrid,
   SelectField,
   SubmitButton,
   TextAreaField,
+  TextField,
 } from "@/components/client/form";
-import { replySupportTicketAction, updateSubscriptionStatusAction } from "./actions";
+import {
+  createClientAction,
+  replySupportTicketAction,
+  updateSubscriptionStatusAction,
+} from "./actions";
 
 const STATUS_OPTIONS = [
   { value: "TRIAL", label: "Essai" },
@@ -124,6 +131,122 @@ export function TicketReplyForm({
           Annuler
         </button>
       </div>
+    </ActionForm>
+  );
+}
+
+const SCHOOL_TYPES = [
+  { value: "PRESCOLAIRE", label: "Prescolaire" },
+  { value: "PRIMAIRE", label: "Primaire" },
+  { value: "COLLEGE", label: "College" },
+  { value: "LYCEE", label: "Lycee" },
+  { value: "UNIVERSITE", label: "Universite" },
+  { value: "FORMATION_PRO", label: "Formation professionnelle" },
+];
+
+/**
+ * Creation d'un client : organisation, premier etablissement, compte
+ * proprietaire et abonnement, en une seule operation.
+ *
+ * Le mot de passe provisoire s'affiche UNE SEULE FOIS apres creation. Il
+ * n'est pas renvoye par la suite : il faudrait alors le reinitialiser.
+ */
+export function NewClientForm({ plans }: { plans: { id: string; label: string }[] }) {
+  const [open, setOpen] = useState(false);
+
+  if (plans.length === 0) {
+    return (
+      <p className="text-sm text-slate-600">
+        Aucune formule d&apos;abonnement active : impossible de creer un client.
+      </p>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="btn-primary">
+        Nouveau client
+      </button>
+    );
+  }
+
+  return (
+    <ActionForm action={createClientAction}>
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold text-slate-900">Le client</legend>
+        <FormGrid cols={2}>
+          <TextField
+            name="organizationName"
+            label="Nom du client"
+            required
+            placeholder="Ex. : Groupe Scolaire Excellence"
+            hint="L'entite qui souscrit. Elle peut detenir plusieurs etablissements."
+          />
+          <TextField name="country" label="Pays" defaultValue="CI" />
+        </FormGrid>
+      </fieldset>
+
+      <fieldset className="mt-6 space-y-4">
+        <legend className="text-sm font-semibold text-slate-900">Premier etablissement</legend>
+        <FormGrid cols={2}>
+          <TextField name="schoolName" label="Nom de l'etablissement" required />
+          <SelectField name="schoolType" label="Type" required options={SCHOOL_TYPES} />
+          <TextField name="city" label="Ville" />
+          <TextField name="phone" label="Telephone" />
+          <TextField name="schoolEmail" label="E-mail de l'etablissement" className="sm:col-span-2" />
+        </FormGrid>
+      </fieldset>
+
+      <fieldset className="mt-6 space-y-4">
+        <legend className="text-sm font-semibold text-slate-900">Compte proprietaire</legend>
+        <FormGrid cols={2}>
+          <TextField name="ownerFirstName" label="Prenom" required />
+          <TextField name="ownerLastName" label="Nom" required />
+          <TextField
+            name="ownerEmail"
+            label="E-mail"
+            type="email"
+            required
+            hint="Si ce compte existe deja, il est reutilise et son mot de passe reste inchange."
+          />
+          <TextField name="ownerPhone" label="Telephone" />
+        </FormGrid>
+      </fieldset>
+
+      <fieldset className="mt-6 space-y-4">
+        <legend className="text-sm font-semibold text-slate-900">Abonnement</legend>
+        <FormGrid cols={2}>
+          <SelectField
+            name="planId"
+            label="Formule"
+            required
+            options={plans.map((p) => ({ value: p.id, label: p.label }))}
+          />
+          <TextField
+            name="trialDays"
+            label="Jours d'essai"
+            type="number"
+            min={0}
+            max={365}
+            defaultValue={30}
+            hint="0 pour un abonnement actif immediatement."
+          />
+        </FormGrid>
+      </fieldset>
+
+      <p className="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
+        L&apos;etablissement est cree avec son <strong>plan comptable SYSCOHADA</strong>, pret a
+        encaisser. L&apos;annee scolaire, les classes, les matieres et les frais restent a
+        configurer par le proprietaire : ces choix engagent sa pedagogie et sa tarification, les
+        deviner produirait une configuration plausible mais fausse.
+      </p>
+
+      <FormActions>
+        <SubmitButton pendingLabel="Creation…">Creer le client</SubmitButton>
+        <button type="button" onClick={() => setOpen(false)} className="btn-secondary">
+          Annuler
+        </button>
+      </FormActions>
     </ActionForm>
   );
 }

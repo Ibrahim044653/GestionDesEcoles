@@ -14,6 +14,18 @@ besoin des autres.
 | Parent ou tuteur | [parent.md](parent.md) |
 | Super-administrateur de la plateforme | [super-administrateur.md](super-administrateur.md) |
 
+### Versions PDF
+
+Les mêmes guides sont disponibles en PDF imprimables dans
+[pdf/](pdf/) — pratique pour remettre un document papier à un enseignant ou à
+une famille sans accès à l'application.
+
+Pour les regénérer après modification d'un guide :
+
+```bash
+npm run guides:pdf
+```
+
 Un profil **Élève** existe aussi (consulter ses notes, ses devoirs, déposer un
 travail). Il est décrit à la fin du guide parent.
 

@@ -15,6 +15,7 @@ import { fail, ok, ConflictError, ValidationError, type ActionResult } from "@/l
 import { parseAmountToMinor, currencyDecimals } from "@/lib/money";
 import { translateUniqueViolation } from "@/lib/domain/sequences";
 import { recordAudit, AUDIT_ACTIONS } from "@/lib/audit";
+import { createSchoolInOrganization } from "@/lib/domain/provisioning";
 import { OPTIONAL_MODULES } from "@/lib/constants";
 
 /** Configuration de l'etablissement. */
@@ -672,6 +673,50 @@ export async function setBudgetAction(
     revalidatePath("/parametres/comptabilite");
     revalidatePath("/rapports");
     return ok(undefined, "Budget enregistre.");
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Ajout d'un etablissement dans l'organisation du proprietaire.
+ *
+ * L'organisation visee est DEDUITE de l'etablissement actif, jamais prise
+ * dans le formulaire : sans cela, un identifiant forge permettrait d'ajouter
+ * une ecole chez un autre client.
+ */
+export async function createSchoolAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<{ schoolId: string }>> {
+  try {
+    const context = await requirePermission(PERMISSIONS.SCHOOL_CREATE);
+
+    const current = await prisma.school.findUniqueOrThrow({
+      where: { id: context.school.id },
+      select: { organizationId: true },
+    });
+
+    const result = await createSchoolInOrganization({
+      organizationId: current.organizationId,
+      school: {
+        name: String(formData.get("name") ?? ""),
+        type: String(formData.get("type") ?? "PRIMAIRE"),
+        city: String(formData.get("city") ?? ""),
+        address: String(formData.get("address") ?? ""),
+        phone: String(formData.get("phone") ?? ""),
+        email: String(formData.get("email") ?? ""),
+        matriculePattern: String(formData.get("matriculePattern") ?? ""),
+      },
+      userId: context.user.id,
+    });
+
+    revalidatePath("/parametres");
+    return ok(
+      result,
+      "Etablissement cree avec son plan comptable. Basculez dessus par le selecteur du haut, " +
+        "puis configurez l'annee scolaire, les classes, les matieres et les frais.",
+    );
   } catch (error) {
     return fail(error);
   }

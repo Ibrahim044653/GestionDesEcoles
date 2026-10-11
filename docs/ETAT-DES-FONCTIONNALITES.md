@@ -15,6 +15,8 @@ charges.
 
 | Fonctionnalite | Etat | Precisions |
 |---|---|---|
+| Creation d'un client (organisation + ecole + proprietaire + abonnement) | TERMINE | Depuis `/admin-saas`. Plan comptable pose a la creation, limite de formule opposable, mot de passe provisoire affiche une seule fois, compte existant reutilise sans ecrasement. 13 tests |
+| Ajout d'un etablissement par le proprietaire | TERMINE | Depuis `/parametres`. L'organisation est deduite de l'etablissement actif, jamais prise dans le formulaire |
 | Multi-tenant (organisation → ecoles) | TERMINE | Isolation verifiee par tests d'integration dedies |
 | Proprietaire gerant plusieurs ecoles | TERMINE | Selecteur d'etablissement dans la barre superieure |
 | 9 roles avec permissions strictes | TERMINE | Matrice dans `src/lib/permissions.ts`, 33 tests |

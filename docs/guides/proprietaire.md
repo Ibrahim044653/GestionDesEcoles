@@ -44,23 +44,35 @@ personnel et comptes d'accès. Un directeur peut diriger l'un sans voir l'autre.
 
 ## 3. Ouvrir un nouvel établissement
 
-**Paramètres → Nouvel établissement**
+**Paramètres → Nouvel établissement** (bouton en haut à droite)
 
-Puis, dans l'ordre :
+Vous renseignez le nom, le type, la ville, les contacts et, si vous le
+souhaitez, une règle de matricule. L'établissement est créé **avec son plan
+comptable**, donc prêt à encaisser.
 
-1. **Identité** : nom, code, type (préscolaire → université), adresse,
-   contacts, devise, fuseau.
-2. **Logo** : il apparaît sur les reçus, bulletins et certificats.
-3. **Règle de matricule** : par exemple `{SCHOOL}-{YY}-{SEQ:4}` donne
-   `GSE-26-0001`.
-4. **Année scolaire et périodes** : trimestres ou semestres, avec leurs dates.
-5. **Structure** : cycles, niveaux, classes, filières, matières, coefficients.
-6. **Réglages pédagogiques** : barème, absences, moyenne de passage,
+> **Ce que l'application ne devine pas, et ne doit pas deviner :** l'année
+> scolaire, les périodes, les classes, les matières et les frais. Ces choix
+> engagent votre pédagogie et votre tarification ; une configuration
+> automatique serait plausible mais fausse, et plus pénible à corriger qu'à
+> saisir.
+
+> **La limite de votre formule est opposable.** Si votre abonnement autorise
+> deux établissements et que vous en avez deux, le bouton refuse la création
+> et vous indique de changer de formule.
+
+Une fois créé, **basculez dessus par le sélecteur du haut**, puis configurez
+dans l'ordre :
+
+1. **Logo et identité complète** : le logo apparaît sur les reçus, bulletins
+   et certificats.
+2. **Année scolaire et périodes** : trimestres ou semestres, avec leurs dates.
+3. **Structure** : cycles, niveaux, classes, filières, matières, coefficients.
+4. **Réglages pédagogiques** : barème, absences, moyenne de passage,
    rattrapage.
-7. **Finances** : comptes (caisse, banque, Mobile Money), plan comptable
+5. **Finances** : comptes (caisse, banque, Mobile Money), plan comptable
    SYSCOHADA, frais de l'année.
-8. **Équipe** : comptes du directeur, du comptable, des enseignants.
-9. **Élèves** : import CSV.
+6. **Équipe** : comptes du directeur, du comptable, des enseignants.
+7. **Élèves** : import CSV.
 
 > **L'ordre compte.** Les frais ont besoin de l'année scolaire ; les classes
 > ont besoin des niveaux ; les affectations d'enseignants ont besoin des
@@ -197,8 +209,12 @@ recettes ; ou des opérations bancaires non rapprochées. Passez par le
 rapprochement bancaire.
 
 **« J'ai créé un établissement de trop. »**
-Il n'y a pas de suppression en un clic, volontairement. Contactez
-l'assistance.
+Il n'y a pas de suppression en un clic, volontairement : un établissement
+contient des dossiers d'élèves. Contactez l'assistance.
+
+**« Le bouton Nouvel établissement refuse la création. »**
+Votre formule a atteint sa limite d'établissements. Le message vous l'indique.
+Changez de formule avant de réessayer.
 
 **« Mon directeur ne peut pas enregistrer un paiement. »**
 C'est le fonctionnement prévu : le rôle Directeur ne crée pas

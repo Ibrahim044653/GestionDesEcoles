@@ -6,6 +6,7 @@ import { requireSuperAdmin } from "@/lib/auth/guard";
 import { fail, ok, NotFoundError, ValidationError, type ActionResult } from "@/lib/errors";
 import { recordAudit, AUDIT_ACTIONS } from "@/lib/audit";
 import { notifyUsers } from "@/lib/domain/notifications";
+import { createClient } from "@/lib/domain/provisioning";
 
 /**
  * Administration des abonnements.
@@ -164,6 +165,54 @@ export async function replySupportTicketAction(
 
     revalidatePath("/admin-saas");
     return ok({ status }, "Reponse enregistree et transmise au demandeur.");
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Creation d'un client : organisation, premier etablissement, compte
+ * proprietaire et abonnement.
+ *
+ * Le mot de passe provisoire n'est retourne qu'une seule fois, pour etre
+ * transmis par un canal distinct. Il n'est jamais stocke en clair ni inscrit
+ * au journal d'audit.
+ */
+export async function createClientAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<{ organizationId: string; temporaryPassword: string }>> {
+  try {
+    const context = await requireSuperAdmin();
+
+    const result = await createClient({
+      organizationName: String(formData.get("organizationName") ?? ""),
+      country: String(formData.get("country") ?? "CI"),
+      school: {
+        name: String(formData.get("schoolName") ?? ""),
+        type: String(formData.get("schoolType") ?? "PRIMAIRE"),
+        city: String(formData.get("city") ?? ""),
+        phone: String(formData.get("phone") ?? ""),
+        email: String(formData.get("schoolEmail") ?? ""),
+      },
+      owner: {
+        email: String(formData.get("ownerEmail") ?? ""),
+        firstName: String(formData.get("ownerFirstName") ?? ""),
+        lastName: String(formData.get("ownerLastName") ?? ""),
+        phone: String(formData.get("ownerPhone") ?? ""),
+      },
+      planId: String(formData.get("planId") ?? ""),
+      trialDays: Number.parseInt(String(formData.get("trialDays") ?? "30"), 10),
+      userId: context.user.id,
+    });
+
+    revalidatePath("/admin-saas");
+    return ok(
+      { organizationId: result.organizationId, temporaryPassword: result.temporaryPassword },
+      result.temporaryPassword
+        ? "Client cree. Notez le mot de passe provisoire : il ne sera plus affiche."
+        : "Client cree. Le proprietaire possedait deja un compte : son mot de passe actuel reste valable.",
+    );
   } catch (error) {
     return fail(error);
   }
