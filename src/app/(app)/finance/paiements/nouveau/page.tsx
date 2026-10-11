@@ -10,6 +10,7 @@ import { getCurrentAcademicYear, listFinancialAccounts } from "@/lib/domain/scho
 import { env } from "@/lib/env";
 import { Alert, Badge, Card, EmptyState, PageHeader, SearchIcon } from "@/components/ui";
 import { PaymentForm } from "./payment-form";
+import { textContains } from "@/lib/search";
 
 export const metadata: Metadata = { title: "Nouvel encaissement" };
 
@@ -41,9 +42,9 @@ export default async function NewPaymentPage({
           schoolId: school.id,
           status: "ACTIVE",
           OR: [
-            { lastName: { contains: query } },
-            { firstName: { contains: query } },
-            { matricule: { contains: query } },
+            { lastName: textContains(query) },
+            { firstName: textContains(query) },
+            { matricule: textContains(query) },
           ],
         },
         take: 12,

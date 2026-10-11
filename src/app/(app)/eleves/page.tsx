@@ -18,6 +18,7 @@ import {
   UsersIcon,
   SearchIcon,
 } from "@/components/ui";
+import { textContains } from "@/lib/search";
 
 export const metadata: Metadata = { title: "Eleves" };
 
@@ -63,10 +64,10 @@ export default async function StudentsPage({
     ...(query
       ? {
           OR: [
-            { lastName: { contains: query } },
-            { firstName: { contains: query } },
-            { matricule: { contains: query } },
-            { phone: { contains: query } },
+            { lastName: textContains(query) },
+            { firstName: textContains(query) },
+            { matricule: textContains(query) },
+            { phone: textContains(query) },
           ],
         }
       : {}),

@@ -6,6 +6,7 @@ import { ROLES, STUDENT_STATUS_LABELS } from "@/lib/constants";
 import { toCsv, csvResponse } from "@/lib/csv";
 import { recordAudit } from "@/lib/audit";
 import { getCurrentAcademicYear } from "@/lib/domain/school-context";
+import { textContains } from "@/lib/search";
 
 /**
  * Export CSV des eleves.
@@ -43,9 +44,9 @@ export async function GET(request: Request) {
       ...(query
         ? {
             OR: [
-              { lastName: { contains: query } },
-              { firstName: { contains: query } },
-              { matricule: { contains: query } },
+              { lastName: textContains(query) },
+              { firstName: textContains(query) },
+              { matricule: textContains(query) },
             ],
           }
         : {}),

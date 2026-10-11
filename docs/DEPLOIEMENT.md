@@ -184,9 +184,11 @@ faut le jeton du magasin, qui ne quitte jamais le serveur.
 
 ### Ce que Vercel ne resout pas
 
-- **Recherche sensible a la casse.** Sous SQLite, `contains` ignore la casse
-  pour l'ASCII ; sous PostgreSQL, non. Les champs de recherche (eleves,
-  bibliotheque) deviennent sensibles a la casse apres migration.
+- **Accents dans la recherche.** La casse est geree
+  (`src/lib/search.ts` ajoute `mode: "insensitive"` quand le moteur est
+  PostgreSQL), mais pas les accents : « Kouame » ne trouve pas « Kouame »
+  ecrit avec un accent aigu. Y remedier demanderait l'extension `unaccent`
+  de PostgreSQL et du SQL brut, que les filtres Prisma n'expriment pas.
 - **Taches planifiees.** Purge des sessions et sauvegardes restent a mettre en
   place (voir sections 6 et 7) ; `vercel crons` peut servir de declencheur.
 - **Demarrage a froid.** Premiere requete apres inactivite plus lente, le

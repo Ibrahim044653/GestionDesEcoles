@@ -1,6 +1,7 @@
 import { prisma, type Db } from "@/lib/prisma";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { recordAudit } from "@/lib/audit";
+import { textContains } from "@/lib/search";
 
 /**
  * Module optionnel BIBLIOTHEQUE : fonds documentaire et prets.
@@ -207,10 +208,10 @@ export async function listCatalog(
       ...(query
         ? {
             OR: [
-              { title: { contains: query } },
-              { author: { contains: query } },
-              { reference: { contains: query } },
-              { isbn: { contains: query } },
+              { title: textContains(query) },
+              { author: textContains(query) },
+              { reference: textContains(query) },
+              { isbn: textContains(query) },
             ],
           }
         : {}),

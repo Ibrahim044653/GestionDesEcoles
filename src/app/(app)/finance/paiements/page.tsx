@@ -21,6 +21,7 @@ import {
   AlertIcon,
 } from "@/components/ui";
 import { CancelPaymentButton } from "./cancel-form";
+import { textContains } from "@/lib/search";
 
 export const metadata: Metadata = { title: "Encaissements" };
 
@@ -63,12 +64,12 @@ export default async function PaymentsPage({
     ...(query
       ? {
           OR: [
-            { reference: { contains: query } },
-            { externalReference: { contains: query } },
-            { receipt: { number: { contains: query } } },
-            { student: { lastName: { contains: query } } },
-            { student: { firstName: { contains: query } } },
-            { student: { matricule: { contains: query } } },
+            { reference: textContains(query) },
+            { externalReference: textContains(query) },
+            { receipt: { number: textContains(query) } },
+            { student: { lastName: textContains(query) } },
+            { student: { firstName: textContains(query) } },
+            { student: { matricule: textContains(query) } },
           ],
         }
       : {}),

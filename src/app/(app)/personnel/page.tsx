@@ -19,6 +19,7 @@ import {
   UsersIcon,
 } from "@/components/ui";
 import { StaffForm, StaffAccessButton, TeachingAssignmentForm } from "./staff-forms";
+import { textContains } from "@/lib/search";
 
 export const metadata: Metadata = { title: "Personnel" };
 
@@ -45,9 +46,9 @@ export default async function StaffPage({
         ...(query
           ? {
               OR: [
-                { lastName: { contains: query } },
-                { firstName: { contains: query } },
-                { staffNumber: { contains: query } },
+                { lastName: textContains(query) },
+                { firstName: textContains(query) },
+                { staffNumber: textContains(query) },
               ],
             }
           : {}),

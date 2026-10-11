@@ -6,7 +6,7 @@ npm run test:watch    # en continu
 npx vitest run tests/payments.integration.test.ts
 ```
 
-**275 tests, 10 fichiers.** Les tests d'integration creent une base SQLite
+**282 tests, 11 fichiers.** Les tests d'integration creent une base SQLite
 jetable (`prisma/test-integration.db`), creee et supprimee automatiquement. La
 base de developpement n'est **jamais** touchee : `tests/global-setup.ts`
 positionne `DATABASE_URL` avant le chargement du moindre module applicatif.
@@ -130,6 +130,16 @@ Module bibliotheque (section 14).
 - Ouvrage et emprunteur d'un autre etablissement refuses
 - Un pret clos ne se cloture pas deux fois ; une perte reste a l'historique
 - Retard compte en jours entiers : un retour prevu aujourd'hui n'est pas en retard
+
+### `search.test.ts` — 7 tests
+Recherche textuelle portable entre moteurs.
+
+- Reconnait PostgreSQL sous ses deux prefixes, sans confondre une sous-chaine
+  (un mot de passe contenant « postgres » ne change pas le moteur detecte)
+- N'ajoute **jamais** `mode` sous SQLite : ce moteur leve une erreur de
+  validation si on le lui passe
+- Transmet la valeur telle quelle, sans normalisation masquant ce qui part
+  reellement vers la base
 
 ---
 
