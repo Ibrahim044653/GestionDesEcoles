@@ -177,6 +177,9 @@ Detail et limites : [docs/TESTS.md](docs/TESTS.md).
 - [Installation](docs/INSTALLATION.md)
 - [Deploiement](docs/DEPLOIEMENT.md)
 - [Guide administrateur](docs/GUIDE-ADMINISTRATEUR.md)
+- **[Guides d'utilisation par profil](docs/guides/README.md)** — un guide par
+  role (directeur, comptable, enseignant, parent, proprietaire, pedagogie,
+  caissier, super-administrateur), avec exemples
 - [Securite et protection des donnees](docs/SECURITE.md)
 - [Integrations externes a configurer](docs/INTEGRATIONS.md)
 - [Modele de donnees](docs/MODELE-DE-DONNEES.md)

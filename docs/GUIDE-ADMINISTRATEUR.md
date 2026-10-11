@@ -3,6 +3,10 @@
 Destine au proprietaire, au directeur et au responsable administratif d'un
 etablissement. Il suit l'ordre reel d'une mise en service.
 
+> **Vous cherchez a utiliser l'application au quotidien ?** Voyez plutot les
+> [guides par profil](guides/README.md) : un guide dedie pour chaque role,
+> avec des exemples concrets.
+
 ---
 
 ## 1. Mise en service, dans l'ordre
