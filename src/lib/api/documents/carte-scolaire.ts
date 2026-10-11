@@ -1,6 +1,6 @@
 import { getAuthContext } from "@/lib/auth/guard";
 import { generateStudentCardPdf } from "@/lib/pdf/documents";
-import { pdfResponse, unauthorized, notFound, resolveAccessibleStudent } from "../../_helpers";
+import { pdfResponse, unauthorized, notFound, resolveAccessibleStudent } from "@/lib/api/document-helpers";
 
 /** Carte scolaire au format PDF. */
 export async function GET(_request: Request, context: { params: Promise<{ studentId: string }> }) {

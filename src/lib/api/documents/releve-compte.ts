@@ -1,6 +1,6 @@
 import { getAuthContext } from "@/lib/auth/guard";
 import { generateStudentStatementPdf } from "@/lib/pdf/documents";
-import { pdfResponse, unauthorized, notFound, resolveAccessibleStudent } from "../../_helpers";
+import { pdfResponse, unauthorized, notFound, resolveAccessibleStudent } from "@/lib/api/document-helpers";
 
 /**
  * Releve de compte d'un eleve.

@@ -1,7 +1,7 @@
 import { getAuthContext } from "@/lib/auth/guard";
 import { generateReportCardPdf } from "@/lib/pdf/documents";
 import { NotFoundError } from "@/lib/errors";
-import { pdfResponse, unauthorized, notFound, resolveAccessibleStudent } from "../../../_helpers";
+import { pdfResponse, unauthorized, notFound, resolveAccessibleStudent } from "@/lib/api/document-helpers";
 
 /**
  * Bulletin de notes au format PDF.

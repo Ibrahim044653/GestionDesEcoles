@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthContext, guardianStudentIds } from "@/lib/auth/guard";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateReceiptPdf } from "@/lib/pdf/documents";
-import { pdfResponse, unauthorized, forbidden } from "../../_helpers";
+import { pdfResponse, unauthorized, forbidden } from "@/lib/api/document-helpers";
 
 /**
  * Recu de paiement au format PDF.

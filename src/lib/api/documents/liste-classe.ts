@@ -3,7 +3,7 @@ import { getAuthContext, teacherScope } from "@/lib/auth/guard";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ROLES } from "@/lib/constants";
 import { generateClassListPdf } from "@/lib/pdf/documents";
-import { pdfResponse, unauthorized, notFound } from "../../_helpers";
+import { pdfResponse, unauthorized, notFound } from "@/lib/api/document-helpers";
 
 /**
  * Liste de classe (feuille d'appel / emargement).
